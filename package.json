@@ -1,0 +1,27 @@
+{
+  "name": "opening-lab",
+  "version": "1.0.0",
+  "description": "Interactive chess opening trainer: book-only opponent, opening tree, drills and in-browser Stockfish analysis.",
+  "scripts": {
+    "build": "node build.mjs",
+    "validate": "node tests/validate.cjs",
+    "validate:engine": "node tests/validate.cjs --engine --depth 18",
+    "serve": "cd dist && python3 -m http.server 8765",
+    "test:ui": "python3 tests/ui_test.py"
+  },
+  "keywords": [
+    "chess",
+    "openings",
+    "trainer",
+    "stockfish",
+    "chess.js"
+  ],
+  "author": "",
+  "license": "GPL-3.0-or-later",
+  "type": "commonjs",
+  "dependencies": {
+    "chess.js": "1.4.0",
+    "stockfish": "19.0.1"
+  },
+  "private": true
+}
