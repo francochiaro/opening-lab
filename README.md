@@ -13,13 +13,15 @@ An interactive chess opening trainer for club players (roughly 500-1100 Elo). Yo
 | Ruy Lopez | White | 1...e5 2.Nf3 Nc6 3.Bb5 |
 | 1.e4 vs Sicilian, French & more | White | every other reply to 1.e4 (Alapin, French Advance, Scandinavian, Caro-Kann Advance, Pirc/Modern, Alekhine, Philidor, Petrov, Stafford, Damiano, odd first replies) |
 | Caro-Kann Defense | Black | 1.e4 |
+| Sicilian Defense (Accelerated Dragon) | Black | 1.e4: the Open Sicilian, Maroczy Bind, Alapin, Smith-Morra, Grand Prix, Closed, Rossolimo, Bowdler, Wing Gambit and more, plus the Najdorf, Dragon and Kan as optional extras |
 | Slav Defense | Black | 1.d4 (incl. London, Colle, Jobava, Blackmar-Diemer), 1.c4, 1.Nf3 |
 | Black vs Unusual First Moves | Black | 1.g3, 1.b3, 1.f4, 1.Nc3, 1.b4, 1.e3, 1.d3, 1.g4 and more |
 
-148 lines in total. Each course card says which Elo range and time controls it suits best. That guidance is a coach's judgement, not statistics.
+181 lines in total. Each course card says which Elo range and time controls it suits best. That guidance is a coach's judgement, not statistics.
 
 ## Features
 
+- **Guidance for first-timers:** every course has a "Your path" card (learn the core lines, then practice, then the common ones) with a one-click "Learn next" line. In Learn & Explore the green arrow shows your move unless you switch to "Quiz me". In Practice, a position you have never seen is shown to you first and only tested the next time it comes up.
 - **Learn & Explore:** play against the book opponent with hints you reveal, plan arrows, and a note on every move (why it works, what to watch out for, the next plan, the typical mistake). If you play a legal move outside the course, the page says so, and links to another course when that course covers the position.
 - **Opening Tree:** a branching tree you can click. Any move loads its exact position. Filters, depth control and zoom.
 - **Practice:** Guided, Recall and Challenge modes, in sessions of 5, 10 or 15 decisions. Weak spots come up first. You can start from move 1 or from the key position. Progress is saved in your browser.

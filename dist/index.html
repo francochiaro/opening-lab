@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Opening Lab</title>
-<meta name="description" content="Interactive chess opening trainer: Vienna, Italian, Ruy Lopez and Caro-Kann against a book-only opponent, with an opening tree, drills and in-browser Stockfish analysis.">
+<meta name="description" content="Interactive chess opening trainer: Vienna, Italian, Ruy Lopez, Caro-Kann, Sicilian, Slav and more against a book-only opponent, with an opening tree, drills and in-browser Stockfish analysis.">
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41Ij48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjIgMTBjMTAuNSAxIDE2LjUgOCAxNiAyOUgxNWMwLTkgMTAtNi41IDgtMjEiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjQgMThjLjM4IDIuOTEtNS41NSA3LjM3LTggOS0zIDItMi44MiA0LjM0LTUgNC0xLjA0Mi0uOTQgMS40MS0zLjA0IDAtMy0xIDAgLjE5IDEuMjMtMSAyLTEgMC00LjAwMyAxLTQtNCAwLTIgNi0xMiA2LTEyczEuODktMS45IDItMy41Yy0uNzMtLjk5NC0uNS0yLS41LTMgMS0xIDMgMi41IDMgMi41aDJzLjc4LTEuOTkyIDIuNS0zYzEgMCAxIDMgMSAzIi8+PHBhdGggZmlsbD0iIzAwMCIgZD0iTTkuNSAyNS41YS41LjUgMCAxIDEtMSAwIC41LjUgMCAxIDEgMSAwbTUuNDMzLTkuNzVhLjUgMS41IDMwIDEgMS0uODY2LS41LjUgMS41IDMwIDEgMSAuODY2LjUiLz48L2c+PC9zdmc+">
 <style>:root {
   --bg: #312e2b;
@@ -407,6 +407,24 @@ select.sel { background: var(--panel-2); border: 1px solid var(--line); border-r
   .status .pulse { animation: none; }
   .confetti { display: none; }
 }
+
+.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 26px; }
+.how > div { background: var(--card); border-radius: 8px; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: start; }
+.how b { grid-row: span 2; width: 26px; height: 26px; border-radius: 50%; background: var(--green); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+.how h3 { margin: 2px 0 4px; font-size: 15px; }
+.how p { margin: 0; color: var(--text-2); font-size: 13px; }
+.coach.path { border-left-color: var(--green); background: var(--panel-2); }
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; color: var(--text-2); }
+.pathlist { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 2px; font-size: 13px; }
+.pathlist li.done { color: var(--muted); }
+.linkish { vertical-align: top; background: none; border: 0; padding: 0; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.linkish:hover { color: var(--green-hi); text-decoration: underline; }
+.pathlist li.done .linkish { color: var(--muted); }
+.tick { color: var(--green); font-weight: 900; margin-right: 6px; }
+details.sub > summary { cursor: pointer; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; padding: 4px 0; }
+.chip.new { background: var(--green); color: #fff; margin-right: 6px; }
+.dots i.new { background: var(--blue); }
+@media (max-width: 760px) { .how { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -3835,6 +3853,13 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
         why: 'A sturdy structure blunts the aggressive e4 players you meet at club level. It is fine in blitz, but can feel passive in bullet where pressure and speed matter more than structure.' }
     },
     {
+      id: 'sicilian', name: 'Sicilian Defense (Accelerated Dragon)', short: 'Sicilian', side: 'b',
+      identity: 'e4 c5',
+      blurb: 'Fight 1.e4 with ...c5, then one setup against almost everything: ...Nc6, ...g6, ...Bg7, ...Nf6 and castle, with the ...d5 break when White is slow.',
+      suit: { elo: '600-2000+', tc: ['Blitz', 'Rapid', 'Classical'],
+        why: 'An unbalanced, active defence that plays for a win. The Accelerated Dragon uses the same kingside setup in nearly every line, so there is little to memorise, and it avoids the sharpest Dragon attacks that club players love.' }
+    },
+    {
       id: 'slav', name: 'Slav Defense', short: 'Slav', side: 'b',
       identity: 'd4 d5',
       blurb: 'Black against 1.d4, the London, 1.c4 and 1.Nf3: the same ...c6/...d5 structure and bishop-first idea as your Caro-Kann.',
@@ -4325,7 +4350,108 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
       tags: ['universal setup'] },
     { id: 'U14', course: 'rare', tier: 'common', name: '1.c3: ...d5 and ...Bf5',
       moves: 'c3 d5 d4 Bf5 Bf4 e6 Nd2 Nd7',
-      tags: ['universal setup'] }
+      tags: ['universal setup'] },
+
+    // ---------------- SICILIAN: ACCELERATED DRAGON (learner is Black) ----------------
+    { id: 'D01', course: 'sicilian', tier: 'core', name: 'Open Sicilian: 7.Bc4 O-O 8.Bb3, trade on d4 and ...b5',
+      moves: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O Bb3 d6 f3 Bd7 Qd2 Nxd4 Bxd4 b5',
+      tags: ['dragon setup', 'queenside counterattack'], suit: 'All levels, Rapid/Classical' },
+    { id: 'D02', course: 'sicilian', tier: 'core', name: 'Open Sicilian: quiet 7.Be2, castle and ...d6',
+      moves: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Be2 O-O O-O d6 Qd2 Bd7 Rad1 Nxd4 Bxd4 Bc6',
+      tags: ['dragon setup', 'c-file'] },
+    { id: 'D03', course: 'sicilian', tier: 'core', name: 'Yugoslav-style 7.f3 and Qd2: the ...d5 break',
+      moves: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 f3 O-O Qd2 d5 exd5 Nxd5 Nxc6 bxc6 Bd4 Bxd4 Qxd4 Qb6',
+      tags: ['...d5 in one go', 'open center'] },
+    { id: 'D04', course: 'sicilian', tier: 'common', name: '7.Qd2 first: castle, then ...d5 after f3',
+      moves: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Qd2 O-O f3 d5',
+      tags: ['transposition', '...d5 in one go'] },
+    { id: 'D05', course: 'sicilian', tier: 'core', name: 'Maroczy Bind 5.c4: trade knights, ...Be6',
+      moves: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 c4 Nf6 Nc3 d6 Be2 Nxd4 Qxd4 Bg7 Be3 O-O Qd2 Be6',
+      tags: ['trade pieces', 'dark squares'] },
+    { id: 'D06', course: 'sicilian', tier: 'common', name: '5.Nxc6 bxc6: the open b-file',
+      moves: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nxc6 bxc6 Qd4 Nf6 e5 Nd5 e6 f6 exd7+ Bxd7',
+      tags: ['recapture toward the center', 'open b-file'] },
+    { id: 'D07', course: 'sicilian', tier: 'common', name: '8.O-O?! allows the fork trick 8...Nxe4',
+      moves: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O O-O Nxe4 Nxe4 d5 Nxc6 bxc6 Bd3 dxe4 Bxe4 Qc7',
+      tags: ['fork trick', 'free center'] },
+    { id: 'D08', course: 'sicilian', tier: 'core', trap: true, name: 'Trap: 6.Be2?? Nxd4! wins a piece, and 7.Qxd4?? Bxd4 the queen',
+      moves: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2 Nxd4 Qxd4 Bxd4',
+      tags: ['trap', 'loose d4 knight'], suit: 'All levels, every time control' },
+    { id: 'D08B', course: 'sicilian', tier: 'common', trap: true, name: 'Trap: 6.Be2?? Nxd4 7.Be3, keep the extra piece',
+      moves: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2 Nxd4 Be3 Nxe2 Qxe2 d6 O-O Nf6',
+      tags: ['trap', 'convert an extra piece'] },
+    { id: 'D09', course: 'sicilian', tier: 'common', name: '6.Nb3: develop and castle',
+      moves: 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Nb3 Nf6 Be2 O-O O-O d6',
+      tags: ['dragon setup'] },
+    { id: 'D10', course: 'sicilian', tier: 'common', name: '3.Nc3 g6 4.d4: back into the main line',
+      moves: 'e4 c5 Nf3 Nc6 Nc3 g6 d4 cxd4 Nxd4 Bg7 Be3 Nf6',
+      tags: ['transposition'] },
+    { id: 'D11', course: 'sicilian', tier: 'core', name: 'Alapin 2.c3: 2...Nf6 hits e4',
+      moves: 'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6 cxd4 d6 Bc4 Nb6 Bb5',
+      tags: ['attack e4', 'chip at e5'], suit: 'All levels, every time control' },
+    { id: 'D12', course: 'sicilian', tier: 'common', name: 'Alapin 2.c3 Nf6 3.e5 Nd5 4.Nf3: ...Nc6 and ...d5',
+      moves: 'e4 c5 c3 Nf6 e5 Nd5 Nf3 Nc6 Bc4 Nb6 Bb3 d5 exd6 Qxd6 O-O c4 Bc2 Bg4',
+      tags: ['chip at e5', 'development'] },
+    { id: 'D13', course: 'sicilian', tier: 'common', name: 'Alapin: 5.cxd4 d6 move order',
+      moves: 'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 cxd4 d6 Nf3 Nc6 Bc4 Nb6 Bb5',
+      tags: ['transposition'] },
+    { id: 'D14', course: 'sicilian', tier: 'common', name: '2.Nf3 Nc6 3.c3: Alapin with ...Nc6 already in',
+      moves: 'e4 c5 Nf3 Nc6 c3 Nf6 e5 Nd5 d4 cxd4 cxd4 d6 Bc4 Nb6 Bb5',
+      tags: ['transposition'] },
+    { id: 'D15', course: 'sicilian', tier: 'core', name: 'Smith-Morra 2.d4 cxd4 3.c3: decline with 3...Nf6',
+      moves: 'e4 c5 d4 cxd4 c3 Nf6 e5 Nd5 cxd4 d6 Nf3 Nc6 Bc4 Nb6 Bb5',
+      tags: ['avoid the gambit', 'transposition'], suit: 'All levels, Blitz/Rapid' },
+    { id: 'D16', course: 'sicilian', tier: 'common', name: 'Smith-Morra 3...Nf6 4.e5 Nd5 5.Nf3',
+      moves: 'e4 c5 d4 cxd4 c3 Nf6 e5 Nd5 Nf3 Nc6 cxd4 d6 Bc4 Nb6 Bb5',
+      tags: ['transposition'] },
+    { id: 'D17', course: 'sicilian', tier: 'core', name: 'Grand Prix 2.Nc3 and 3.f4: ...g6, then ...e6 against Bc4',
+      moves: 'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bc4 e6 O-O Nge7 d3 d5 Bb3 O-O',
+      tags: ['dragon setup', 'blunt the bishop'] },
+    { id: 'D18', course: 'sicilian', tier: 'common', name: 'Grand Prix 5.Bb5: jump to d4',
+      moves: 'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bb5 Nd4 O-O a6 Be2 b5 d3 Bb7',
+      tags: ['outpost on d4', 'queenside space'] },
+    { id: 'D19', course: 'sicilian', tier: 'common', name: '2.f4: ...Nc6 and ...g6 reach the Grand Prix',
+      moves: 'e4 c5 f4 Nc6 Nf3 g6 Nc3 Bg7 Bc4 e6',
+      tags: ['transposition', 'dragon setup'] },
+    { id: 'D20', course: 'sicilian', tier: 'common', name: '2.f4 Nc6 3.Nf3 g6 4.d4: take and develop',
+      moves: 'e4 c5 f4 Nc6 Nf3 g6 d4 cxd4 Nxd4 Bg7 Be3 Nf6 Nc3 O-O',
+      tags: ['dragon setup', 'open center'] },
+    { id: 'D21', course: 'sicilian', tier: 'core', name: 'Rossolimo 3.Bb5: ...g6, ...Bg7 and ...e5',
+      moves: 'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 c3 e5 d3 Nge7 Be3 d6',
+      tags: ['dragon setup', 'control d4'], suit: 'All levels, Rapid' },
+    { id: 'D22', course: 'sicilian', tier: 'common', name: 'Rossolimo 4.Bxc6: recapture ...dxc6',
+      moves: 'e4 c5 Nf3 Nc6 Bb5 g6 Bxc6 dxc6 d3 Bg7 h3 Nf6 Nc3 O-O',
+      tags: ['bishop pair', 'open d-file'] },
+    { id: 'D23', course: 'sicilian', tier: 'common', name: 'Rossolimo 5.Re1: ...e5 holds the center',
+      moves: 'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 Re1 e5 Bxc6 dxc6 d3 Ne7',
+      tags: ['control d4', 'bishop pair'] },
+    { id: 'D24', course: 'sicilian', tier: 'common', name: 'Closed Sicilian 2.Nc3 and g3: mirror the setup',
+      moves: 'e4 c5 Nc3 Nc6 g3 g6 Bg2 Bg7 d3 d6 f4 e6 Nf3 Nge7 O-O O-O',
+      tags: ['dragon setup', 'queenside play'] },
+    { id: 'D25', course: 'sicilian', tier: 'common', name: 'Bowdler 2.Bc4: ...e6 and ...d5 hit the bishop',
+      moves: 'e4 c5 Bc4 e6 Nf3 d5 exd5 exd5 Bb5+ Nc6 O-O Nf6',
+      tags: ['gain time', 'center'] },
+    { id: 'D26', course: 'sicilian', tier: 'common', name: '2.Nf3 Nc6 3.Bc4: ...e6 and ...d5',
+      moves: 'e4 c5 Nf3 Nc6 Bc4 e6 O-O d5 exd5 exd5 Bb5 Bd6',
+      tags: ['gain time', 'center'] },
+    { id: 'D27', course: 'sicilian', tier: 'common', name: 'Wing Gambit 2.b4: take, then ...d5',
+      moves: 'e4 c5 b4 cxb4 a3 d5 exd5 Qxd5 Nf3 e5 axb4 Bxb4 Nc3 Bxc3 dxc3 Qxd1+ Kxd1',
+      tags: ['extra pawn', 'queen trade'] },
+    { id: 'D28', course: 'sicilian', tier: 'common', name: '2.d3: King\'s Indian Attack, same setup',
+      moves: 'e4 c5 d3 Nc6 g3 g6 Bg2 Bg7 f4 d6 Nf3 e6 O-O Nge7',
+      tags: ['dragon setup'] },
+    { id: 'D29', course: 'sicilian', tier: 'common', name: '2.d4 cxd4 3.Qxd4: ...Nc6 gains time',
+      moves: 'e4 c5 d4 cxd4 Qxd4 Nc6 Qd3 Nf6 Nc3 g6 Nf3 Bg7 Be2 O-O O-O d6',
+      tags: ['gain time on the queen', 'dragon setup'] },
+    { id: 'D30', course: 'sicilian', tier: 'advanced', name: 'Other Sicilian (optional): the Najdorf 2...d6 and 5...a6',
+      moves: 'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Be2 e5 Nb3 Be7 O-O O-O',
+      tags: ['optional system', 'theory-heavy'], suit: 'Classical, 1600+' },
+    { id: 'D31', course: 'sicilian', tier: 'advanced', name: 'Other Sicilian (optional): the classical Dragon 5...g6',
+      moves: 'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6 Be2 Bg7 O-O O-O Be3 Nc6',
+      tags: ['optional system', 'dragon setup'] },
+    { id: 'D32', course: 'sicilian', tier: 'advanced', name: 'Other Sicilian (optional): the Kan 2...e6 and 4...a6',
+      moves: 'e4 c5 Nf3 e6 d4 cxd4 Nxd4 a6 Bd3 Nf6 O-O Qc7 Qe2 d6',
+      tags: ['optional system', 'flexible'] }
   ];
 
   g.OL_COURSES = COURSES;
@@ -5898,6 +6024,1195 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
 ;
 (function (g) {
   g.OL_ANN = g.OL_ANN || {};
+  var A = g.OL_ANN.sicilian = g.OL_ANN.sicilian || {};
+
+  A['@lessons'] = [
+    { title: 'Why 1...c5',
+      body: "1...c5 fights for the d4 square from the side instead of copying White with ...e5. When White plays d4, you take with ...cxd4: you give up a wing pawn for a center pawn, so you keep two central pawns (d7 and e7) against White's one. The c-file opens for your rook and queen, and the game becomes unbalanced: White usually attacks on the kingside, you counterattack on the queenside and down the c-file." },
+    { title: 'The Accelerated Dragon setup and the ...d5 break',
+      body: "Your setup is ...Nc6, ...g6, ...Bg7, ...Nf6 and ...O-O. The g7 bishop is your best piece: it looks down the long diagonal at d4, c3 and b2. The trick of this move order is that your d-pawn is still on d7. If White plays slowly with f3 and Qd2, you can strike with ...d5 in ONE move and open the center before White's attack gets going. Only play ...d6 once you know White is not allowing ...d5, for example after Bc4 and Bb3." },
+    { title: 'Against everything else: one rule',
+      body: "When White avoids 2.Nf3 and 3.d4, keep it simple. Against quiet setups (2.Nc3, 2.f4, 2.d3, 3.Bb5) play the same ...Nc6, ...g6 and ...Bg7 setup. Against the Alapin 2.c3 (and the Smith-Morra 3.c3) hit e4 at once with ...Nf6: c3 took the knight's best square, so White cannot defend e4 with Nc3. Against an early Bc4 aimed at f7, play ...e6 to block the bishop and then ...d5 to kick it." }
+  ];
+
+  A['@plans'] = Object.assign(A['@plans'] || {}, {
+    D01: "Your queenside pawns are rolling. Push ...b4 to kick the c3 knight away from e4, then ...a5-a4 to chase the b3 bishop. Put a rook on c8 and the queen on a5 or b8. If White pushes e5, take with ...dxe5.",
+    D02: "The c6 bishop hits e4 and the c-file is yours. Play ...Qa5 and ...Rfc8, and look for ...a6 and ...b5 to gain queenside space. Trade dark-squared bishops only if White's king is not left weak.",
+    D03: "The center is open and the queens are likely to come off. After a queen trade, use the open b-file and a-file, play ...Be6 and ...Rfd8, and aim your rooks at White's queenside pawns.",
+    D04: "You struck with ...d5 in one move. Take back on d5 with the knight, trade on c6 with ...bxc6 if White does, and use the open b-file against White's king if it castles queenside.",
+    D05: "White has a space clamp with pawns on c4 and e4. Trade pieces, because the side with less space likes trades. Play ...Qa5, ...Rfc8 and ...a6, then break with ...b5 when it works. The c4 pawn is your main target.",
+    D06: "Finish development with ...Bg7 and ...O-O. Your c6 pawn controls d5, and the half-open b-file points at b2. A queen check on a5 and a later ...e5 are typical ideas.",
+    D07: "The fork trick freed your game. Put a rook on b8 against b2, bring the light-squared bishop to e6 or f5, and use the g7 bishop on the long diagonal. The position is equal and easy to play.",
+    D08: "You won a big amount of material. Keep the d4 bishop safe (it can drop back to g7 or b6), develop ...d6, ...Nf6 and castle, and trade pieces. When you are ahead, every trade brings you closer to a won endgame.",
+    D08B: "You are a whole piece up for a pawn. Castle, keep your pieces protected, and trade whenever you can: a piece up, the endgame is an easy win.",
+    D09: "The b3 knight is far from the center. Play ...Be6 and ...Rc8, and push ...a5-a4 to chase the knight. Keep the g7 bishop on the long diagonal.",
+    D10: "You are back in the main Accelerated Dragon. Castle next, then play ...d6 against Bc4 and Bb3, or ...d5 in one move if White plays f3 and Qd2.",
+    D11: "White's bishop pins your c6 knight. Release the tension with ...dxe5 or unpin with ...Bd7, then play ...e6, ...Be7 and castle. White's d4 pawn is isolated, so blockade it and attack it.",
+    D12: "Your queen is active on d6 and the g4 bishop pins the f3 knight. Play ...e6, then castle (often queenside) and use the open d-file. Watch for Na3 hitting your c4 pawn.",
+    D13: "The same position as the Alapin main line. Release the pin with ...dxe5 or ...Bd7, then ...e6, ...Be7 and castle, and play against White's d4 pawn.",
+    D14: "You reached the Alapin structure. Unpin with ...Bd7 or swap on e5, finish with ...e6, ...Be7 and castle, and target the d4 pawn.",
+    D15: "By declining the gambit you are in a calm Alapin-type position. Unpin with ...Bd7 or ...dxe5, then ...e6, ...Be7 and castle. White has no gambit attack, and d4 can become a target.",
+    D16: "Same structure as the Alapin. Release the pin, play ...e6 and ...Be7, castle, and aim your pieces at d4.",
+    D17: "Your e6 pawn blunts the bishop and ...d5 claims the center. Consider ...Na5 to trade off the b3 bishop, or ...b5 and ...c4 to gain queenside space. White wants f5, so keep an eye on that square.",
+    D18: "The d4 knight is a monster. Play ...e6, ...Ne7 and castle. If White ever takes on d4, recapture with ...cxd4 and gain space; your queenside pawns can keep rolling with ...b4.",
+    D19: "This is the Grand Prix position. Continue ...Nge7, ...d5 and castle, keeping the e6 pawn to blunt White's bishop.",
+    D20: "Finish with ...d6 to stop e5, and look for ...Qb6 (hitting b2) and ...Ng4 (hitting the e3 bishop). Your g7 bishop presses on the long diagonal.",
+    D21: "Castle, then aim for ...f5 to challenge White's center. The e5 pawn controls d4. If White's bishop stays on b5, ...a6 and ...b5 can gain space with tempo.",
+    D22: "You have the bishop pair. Open the position for your bishops with ...e5 or ...b6 and ...Nd7, and avoid closing the center. White will try to use the knights.",
+    D23: "You have the two bishops and a solid pawn on e5. Castle, then play ...f6 to support e5 and ...Be6. Later, open lines so the bishops can work.",
+    D24: "Play on the queenside with ...Rb8, ...b5 and ...b4, and put a knight on d4. White will push f5 on the kingside, so do not leave your king short of defenders.",
+    D25: "Develop ...Be7 or ...Bd6, castle and play ...Bg4. Your d5 pawn gives you central space; watch for pins on the e-file before you castle.",
+    D26: "Castle quickly with ...Nge7 and ...O-O, then play ...Bg4. Watch for Re1 pins on the e-file. Your c5 and d5 pawns give you central space.",
+    D27: "You are a pawn up in a queenless position, and White's king has lost the right to castle. Develop ...Nc6 and ...Be6 or ...Bf5, castle, and use the d-file. White's c-pawns are doubled.",
+    D28: "Castle, then play ...Rb8 and ...b5-b4 on the queenside, or put a knight on d4. Your setup works the same way against any slow White system.",
+    D29: "White's queen moved twice and you lead in development. Play ...Be6 or ...Bg4, ...Rc8, and ...Nd7-c5 to hit the d3 queen. ...a6 and ...b5 gain more space.",
+    D30: "The Najdorf: play ...Be6, ...Nbd7 and ...Rc8, then look for ...b5 and the ...d5 break. The d5 square is the key: keep it controlled.",
+    D31: "The classical Dragon: play ...Bd7, ...Rc8 and ...a6 with ...b5, or the ...d5 break when White allows it. The g7 bishop on the long diagonal is your best piece.",
+    D32: "The Kan: play ...Nbd7, ...Be7, castle, then ...b5 and ...Bb7. Wait for White to commit, then break with ...d5 or ...b4."
+  });
+
+  Object.assign(A, {
+    'e4 c5': {
+      idea: 'The Sicilian Defense. The c-pawn fights for d4 from the side, so if White plays d4 you can trade a wing pawn for a center pawn.',
+      watch: 'White decides the character of the game on move 2. The main line is 2.Nf3 and 3.d4; everything else has a simple answer in this course.',
+      plan: 'Against 2.Nf3 play ...Nc6, then ...g6 and ...Bg7 after the center opens.',
+      mistake: 'Playing slowly once the center opens. Black must develop fast, because ...c5 did not develop a piece.',
+      arrows: [['c5', 'd4']]
+    },
+    'e4 c5 Nf3': {
+      what: 'The main move. White develops and prepares d4 to open the center.',
+      threat: 'd4 next, opening lines while White is ahead in development.',
+      avoid: 'Do not play ...e5: it leaves a hole on d5 and blocks your future g7 bishop. Develop with ...Nc6.'
+    },
+    'e4 c5 c3': {
+      what: 'The Alapin. White wants d4 next, so that after ...cxd4 cxd4 White keeps two pawns in the center.',
+      threat: 'A big pawn center with d4 and e4.',
+      avoid: 'Do not let White build it for free. Hit e4 now with ...Nf6: c3 took away the c3 square, so the knight cannot defend e4.'
+    },
+    'e4 c5 d4': {
+      what: 'White opens the center at once.',
+      threat: 'After ...cxd4 White can play 3.c3 (the Smith-Morra Gambit) or recapture with the queen.',
+      avoid: 'Do not ignore the pawn. Take with ...cxd4, trading your wing pawn for a center pawn.'
+    },
+    'e4 c5 Nc3': {
+      what: 'White develops and keeps d4 for later. This leads to the Closed Sicilian (g3) or the Grand Prix (f4).',
+      threat: 'A slow kingside attack with f4 and f5, or a quiet fianchetto.',
+      avoid: 'Do not invent a new plan. ...Nc6 and ...g6 give you the same setup as always.'
+    },
+    'e4 c5 f4': {
+      what: 'White grabs space on the kingside and plans Nf3, Nc3 and a kingside attack.',
+      threat: 'e5 or f5 pushes once White is developed.',
+      avoid: 'Do not panic: ...Nc6 and ...g6 reach the same positions as the Grand Prix.'
+    },
+    'e4 c5 Bc4': {
+      what: 'The Bowdler. The bishop aims at f7 straight away.',
+      threat: 'Qh5 or Qf3 with Ng5 ideas against f7 if Black develops carelessly.',
+      avoid: 'Do not leave f7 weak. ...e6 blocks the bishop and prepares ...d5 to kick it with tempo.'
+    },
+    'e4 c5 b4': {
+      what: 'The Wing Gambit. White offers a pawn to pull your c-pawn away from the center.',
+      threat: 'If you take, White hopes for a quick d4 and a big center.',
+      avoid: 'Do not be scared to take. ...cxb4 and then ...d5 hits e4 before White gets d4 in.'
+    },
+    'e4 c5 d3': {
+      what: "A quiet King's Indian Attack setup: g3, Bg2, Nf3 and castle.",
+      threat: 'A slow kingside attack later with f4 and f5.',
+      avoid: 'Do not overreact. Mirror the setup with ...Nc6, ...g6 and ...Bg7.'
+    },
+    'e4 c5 Nf3 Nc6': {
+      idea: 'The knight develops and controls d4 and e5. Playing ...Nc6 and ...g6 before ...d6 keeps the d-pawn at home, so later ...d5 can come in one move.',
+      watch: 'White can attack the knight with 3.Bb5 (the Rossolimo). Answer it with ...g6 and ...Bg7.',
+      plan: 'After 3.d4 take with ...cxd4, and after 4.Nxd4 play ...g6.',
+      mistake: 'Delaying development with pawn moves like ...a6 or ...e6 before you have a plan.',
+      arrows: [['c6', 'd4']]
+    },
+    'e4 c5 Nf3 d6': {
+      alt: true, label: 'Other Sicilian (optional)',
+      idea: 'The move order of the Najdorf and the classical Dragon. It is a strong move, but these systems need much more theory than the Accelerated Dragon.',
+      watch: 'After 3.d4 cxd4 4.Nxd4 Nf6 5.Nc3 you must choose between ...a6 (Najdorf) and ...g6 (Dragon).',
+      plan: 'Take on d4, play ...Nf6 to hit e4, then pick your system.',
+      mistake: 'Mixing systems. Pick one Sicilian and learn its plans; this course recommends ...Nc6 and ...g6.'
+    },
+    'e4 c5 Nf3 e6': {
+      alt: true, label: 'Other Sicilian (optional)',
+      idea: 'The move order of the Kan and Taimanov: flexible and solid, with the e-pawn supporting a later ...d5.',
+      watch: 'The c8 bishop is blocked by e6, so it usually goes to b7 after ...b5.',
+      plan: 'After 3.d4 cxd4 4.Nxd4 play ...a6, then ...Nf6, ...Qc7 and ...b5.',
+      mistake: 'Treating it like the Dragon. The plans are different: here the bishop goes to b7, not g7.'
+    },
+    'e4 c5 Nf3 Nc6 d4': {
+      what: 'The Open Sicilian. White opens the center to use a lead in development.',
+      threat: 'd5 to kick your c6 knight, or dxc5.',
+      avoid: 'Do not let White keep a pawn on d4. Take with ...cxd4.'
+    },
+    'e4 c5 Nf3 Nc6 Nc3': {
+      what: 'White develops and keeps the option of d4, Bb5 or a Closed setup.',
+      threat: 'Nothing direct; White is waiting to see your setup.',
+      avoid: 'Do not play ...e5 and leave a hole on d5. ...g6 keeps your normal setup.'
+    },
+    'e4 c5 Nf3 Nc6 c3': {
+      what: 'An Alapin with the knights already out. White wants d4 with pawn support.',
+      threat: 'A big center after d4 and cxd4.',
+      avoid: 'Do not allow d4 for free. ...Nf6 hits e4, which no knight can defend from c3.'
+    },
+    'e4 c5 Nf3 Nc6 Bb5': {
+      what: 'The Rossolimo. The bishop eyes your c6 knight, which guards d4 and e5.',
+      threat: 'Bxc6 to double your pawns, then a quiet game against them.',
+      avoid: 'Do not panic about doubled pawns. Play ...g6 and ...Bg7; if White takes on c6, the open lines help your bishops.'
+    },
+    'e4 c5 Nf3 Nc6 Bc4': {
+      what: 'The bishop aims at f7, the weakest square near your king.',
+      threat: 'Ng5 together with the bishop against f7 if you develop carelessly.',
+      avoid: 'Do not leave f7 alone. ...e6 blocks the bishop and prepares ...d5 with tempo.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4': {
+      idea: 'Trade your c-pawn for White\'s d-pawn. You now have two central pawns against one, and the c-file is half-open for your rooks.',
+      plan: 'After 4.Nxd4 play ...g6 and bring the bishop to g7.',
+      mistake: 'Leaving the pawn on c5 and letting White push d5 or take on c5.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6': {
+      idea: 'The Accelerated Dragon. The bishop goes to g7, where it looks down the long diagonal at d4, c3 and b2. The d-pawn stays home, so ...d5 can come in one move later.',
+      watch: 'White can play 5.c4 (the Maroczy Bind) to stop ...d5, or 5.Nxc6 to change the structure.',
+      plan: 'Next ...Bg7, ...Nf6 and castle.',
+      mistake: 'An early ...e5. It leaves a hole on d5 and blocks your own g7 bishop.',
+      arrows: [['f8', 'g7']]
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3': {
+      what: 'The natural developing move. White defends e4 and keeps all options.',
+      threat: 'Be3 and Bc4, or a kingside attack with f3, Qd2 and O-O-O.',
+      avoid: 'Do not forget the d4 knight: ...Bg7 adds a second attacker on it, and White must keep it protected.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 c4': {
+      what: 'The Maroczy Bind. The pawns on c4 and e4 clamp the d5 square and stop your ...d5 break.',
+      threat: 'A long squeeze where White has more space.',
+      avoid: 'Do not try to force ...d5. Develop with ...Nf6, and trade knights with ...Nxd4 to ease the cramp.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nxc6': {
+      what: 'White trades knights before your bishop reaches g7.',
+      threat: 'After ...bxc6, Qd4 hits your h8 rook and the a7 pawn through the empty long diagonal.',
+      avoid: 'Do not recapture with the d-pawn by reflex. ...bxc6 takes toward the center and opens the b-file; then block Qd4 with ...Nf6.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7': {
+      idea: 'The bishop reaches the long diagonal and adds a second attacker on the d4 knight.',
+      watch: 'White must protect d4 now, usually with Be3. If White forgets (6.Be2?), the knight on d4 falls.',
+      plan: 'Next ...Nf6 and castle.',
+      mistake: 'Playing ...d6 too early. Keep the d-pawn home so ...d5 stays a one-move option.',
+      arrows: [['g7', 'd4']]
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3': {
+      what: 'The bishop protects the d4 knight. This is the main line.',
+      threat: 'Bc4 against f7, or Qd2 and Bh6 to swap off your g7 bishop.',
+      avoid: 'Do not play ...d6 yet: it lets White choose the sharp Yugoslav Attack. Play ...Nf6 and castle first.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2': {
+      dubious: true,
+      what: 'A natural-looking developing move, but it is a blunder. The d4 knight is attacked twice (by the c6 knight and the g7 bishop) and defended only once, by the queen.',
+      threat: 'None: White simply forgot about d4.',
+      avoid: 'Do not miss it: ...Nxd4! wins a knight, and if White recaptures with Qxd4, ...Bxd4 wins the queen.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Nb3': {
+      what: 'The knight steps back out of the g7 bishop\'s line of fire.',
+      threat: 'A slow setup with Be2, O-O and f4.',
+      avoid: 'Do not chase the knight with pawn moves yet. Develop ...Nf6 and castle, then use ...a5-a4.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2 Nxd4': {
+      idea: 'Take the free knight! The d4 knight was attacked by your c6 knight and your g7 bishop, and defended only by the queen.',
+      watch: 'If White recaptures with Qxd4, the queen walks into your g7 bishop: ...Bxd4 wins it.',
+      plan: 'Keep your extra piece safe, develop and castle.',
+      mistake: 'Playing a routine move like ...Nf6 and letting White fix the problem with Be3. If White answers 7.Be3, take on e2 with ...Nxe2 and stay a piece up.',
+      arrows: [['c6', 'd4'], ['g7', 'd4']]
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2 Nxd4 Be3': {
+      what: 'White\'s best try: the bishop attacks your d4 knight instead of the queen walking into the g7 bishop.',
+      threat: 'Bxd4 next would win the piece back, because your knight is now attacked twice.',
+      avoid: 'Do not leave the knight on d4. Take the e2 bishop with ...Nxe2 so the extra piece stays yours.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2 Nxd4 Be3 Nxe2': {
+      idea: 'Cash in: the knight takes a bishop on its way out, so you stay a whole piece up.',
+      watch: 'After Qxe2 your g7 bishop is still eyeing c3 and b2.',
+      plan: 'Play ...d6 and ...Nf6, castle, and trade pieces. A piece up, simple chess wins.',
+      mistake: 'Retreating with ...Nc6, which also works but lets White keep the e2 bishop for free development.',
+      arrows: [['d4', 'e2']]
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2 Nxd4 Be3 Nxe2 Qxe2 d6': {
+      idea: 'A calm developing move: it opens the c8 bishop and keeps White\'s e-pawn from advancing to e5 safely.',
+      plan: 'Next ...Nf6 and ...O-O. Your king gets safe and your extra piece does the rest.',
+      mistake: 'Grabbing pawns or hunting for more tactics before your king is castled.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2 Nxd4 Be3 Nxe2 Qxe2 d6 O-O Nf6': {
+      idea: 'The last minor piece comes out and you are ready to castle.',
+      watch: 'White may try f4 and e5 to chase the knight. Keep ...Ng4 or ...Nd7 in mind as answers.',
+      plan: 'Castle, then trade pieces whenever you can. Every trade makes your extra piece count more.',
+      mistake: 'Leaving the king in the center while White still has active pieces.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2 Nxd4 Qxd4': {
+      dubious: true,
+      what: 'White takes back with the queen, but the queen lands on the long diagonal of your g7 bishop.',
+      threat: 'None. The d4 square is not defended by anything.',
+      avoid: 'Do not miss ...Bxd4, winning the queen.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2 Nxd4 Qxd4 Bxd4': {
+      idea: 'The bishop captures the queen. Nothing can take back on d4.',
+      plan: 'Keep the bishop safe from Nb5 or Nd5 by dropping back to g7 or b6, then develop and castle.',
+      mistake: 'Getting careless after winning material. Develop and trade pieces.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6': {
+      idea: 'Develop, hit e4, and get ready to castle.',
+      watch: 'White now chooses a setup: Bc4 aims at f7, while f3 and Qd2 prepare a kingside attack.',
+      plan: 'Castle next. Then choose: ...d6 against Bc4 and Bb3, ...d5 against f3 and Qd2.',
+      mistake: 'Playing ...d6 too soon. With the pawn on d6, the ...d5 break costs two moves instead of one.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4': {
+      what: 'The bishop aims at f7 and at d5.',
+      threat: 'After you castle, the bishop pins f7 against your king and supports a kingside attack.',
+      avoid: 'After ...O-O, watch White\'s next move: if White castles with the bishop still on c4, ...Nxe4 and ...d5 (the fork trick) works.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Be2': {
+      what: 'A quiet setup: White will castle and play slowly.',
+      threat: 'No direct threat; White wants a calm game with more space.',
+      avoid: 'Do not play ...Ng4 hoping to hit the e3 bishop: the e2 bishop simply takes it with Bxg4.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 f3': {
+      what: 'A Yugoslav-style setup: f3 protects e4 and stops ...Ng4, then Qd2 and O-O-O.',
+      threat: 'A kingside pawn storm with g4 and h4, plus Bh6 to swap off your g7 bishop.',
+      avoid: 'Do not play ...d6: that is exactly the sharp Dragon White wants. Castle, then hit the center with ...d5 in one move.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Qd2': {
+      what: 'White prepares Bh6 to trade your g7 bishop, and may castle queenside.',
+      threat: 'Bh6 removing your best defender, then a kingside attack.',
+      avoid: 'Do not wait passively. Castle, and if White adds f3, strike with ...d5.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O': {
+      idea: 'Get your king safe. Castling also sets a trap: if White castles too, the c4 bishop is loose.',
+      watch: 'The correct move for White is Bb3, taking the bishop off the c4 square.',
+      plan: 'Against 8.Bb3 play ...d6; against 8.O-O play ...Nxe4!.',
+      mistake: 'Missing the fork trick when White castles with the bishop on c4.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O Bb3': {
+      what: 'The bishop retreats before you can hit it with ...d5. It still aims at f7.',
+      threat: 'f3, Qd2, O-O-O and an h4-h5 attack on your king.',
+      avoid: 'Do not try the fork trick now: with the bishop on b3, ...Nxe4 Nxe4 d5 just loses a piece.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O O-O': {
+      what: 'Castling looks natural, but the c4 bishop is now a target.',
+      threat: 'No threat; this gives you a tactical chance.',
+      avoid: 'Do not miss ...Nxe4!: after Nxe4, ...d5 forks the c4 bishop and the e4 knight.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O Bb3 d6': {
+      idea: 'Now that the bishop sits on b3, ...d5 is not possible, so ...d6 builds a solid center and opens the c8 bishop.',
+      watch: 'White will usually play f3, Qd2 and castle queenside to attack.',
+      plan: 'Play ...Bd7, then trade on d4 with ...Nxd4 and push ...b5.',
+      mistake: 'Trying ...Nxe4 or ...d5 here. With the bishop on b3, the fork trick does not work and you just lose material.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O Bb3 d6 f3 Bd7': {
+      idea: 'Develop the last minor piece and connect your rooks. The bishop also supports ...b5.',
+      plan: 'Next ...Nxd4 and ...b5, or ...Rc8 and ...Qa5.',
+      mistake: 'Leaving the queenside pieces at home while White prepares an attack. Counterplay must be quick.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O Bb3 d6 f3 Bd7 Qd2 Nxd4': {
+      idea: 'Trade White\'s strong central knight. After Bxd4, your ...b5 push comes quickly.',
+      watch: 'The d4 bishop now faces your g7 bishop. If dark-squared bishops are traded, your king loses a defender, so keep pieces near it.',
+      plan: 'Next ...b5, then ...b4 and ...a5.',
+      mistake: 'Starting the queenside attack before trading on d4, which lets White\'s knight jump to b5 or d5.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O Bb3 d6 f3 Bd7 Qd2 Nxd4 Bxd4 b5': {
+      idea: 'Your queenside attack starts. ...b4 next kicks the c3 knight, and ...a5-a4 can chase the b3 bishop.',
+      watch: 'The b5 pawn is protected by the d7 bishop. White may push h4-h5 or e5, so count the race carefully.',
+      plan: 'Push ...a5 and ...b4, and bring a rook to c8.',
+      mistake: 'Playing slowly on the queenside. In opposite-side attacks, speed matters more than material.',
+      arrows: [['b5', 'b4']]
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Be2 O-O': {
+      idea: 'Castle against the quiet setup. Your king is safe and the rook comes to the center.',
+      plan: 'Next ...d6, then trade on d4 and use the c-file.',
+      mistake: '...Ng4 to hit the e3 bishop. The e2 bishop just takes it.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Be2 O-O O-O d6': {
+      idea: 'A solid center move that opens the c8 bishop. Against a slow White setup there is no need to rush ...d5.',
+      plan: 'Develop with ...Bd7, trade on d4 and bring the bishop to c6.',
+      mistake: 'Leaving the c8 bishop at home for too long.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Be2 O-O O-O d6 Qd2 Bd7': {
+      idea: 'Develop the bishop and connect the rooks. It will come to c6 after the knights trade on d4.',
+      plan: 'Next ...Nxd4 and ...Bc6, or ...Rc8.',
+      mistake: 'Putting the queen on a5 before your pieces are ready; it can be hit by Nd5 or Nb3.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Be2 O-O O-O d6 Qd2 Bd7 Rad1 Nxd4': {
+      idea: 'Trade the central knight. After Bxd4 your bishop can come to c6 and press on e4.',
+      plan: 'After Bxd4, play ...Bc6.',
+      mistake: 'Allowing White\'s knight to stay on d4 forever, where it controls b5, c6, e6 and f5.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Be2 O-O O-O d6 Qd2 Bd7 Rad1 Nxd4 Bxd4 Bc6': {
+      idea: 'The bishop attacks e4 from c6 and supports a later ...Qa5 and ...Rfc8.',
+      plan: 'Play ...Qa5, ...Rfc8 and later ...a6 and ...b5.',
+      mistake: 'Grabbing the e4 pawn without checking: count attackers and defenders first.',
+      arrows: [['c6', 'e4']]
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 f3 O-O': {
+      idea: 'Castle first. Against f3 and Qd2 your answer is the ...d5 break, and you want your king safe before the center opens.',
+      plan: 'After Qd2 play ...d5.',
+      mistake: '...d6, which walks into the sharp Yugoslav Attack where White storms your king.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 f3 O-O Qd2 d5': {
+      idea: 'The point of the Accelerated Dragon: ...d5 in one move. It opens the center before White can castle and attack.',
+      watch: 'Material stays balanced if you recapture correctly. The d4 knight is still attacked by your g7 bishop.',
+      plan: 'After exd5 take back with ...Nxd5, hitting the c3 knight and the e3 bishop.',
+      mistake: 'Hesitating with ...d6 and letting White start g4-h4.',
+      arrows: [['d7', 'd5']]
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 f3 O-O Qd2 d5 exd5 Nxd5': {
+      idea: 'The knight recaptures and attacks the c3 knight and the e3 bishop.',
+      plan: 'If White takes on c6, recapture ...bxc6 toward the center.',
+      mistake: 'Recapturing with the queen, which can be hit by Nc3 or Nb5 with tempo.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 f3 O-O Qd2 d5 exd5 Nxd5 Nxc6 bxc6': {
+      idea: 'Take toward the center. The c6 pawn supports d5 and the b-file opens against b2.',
+      plan: 'If White offers a bishop trade with Bd4, take it and bring the queen to b6.',
+      mistake: '...Nxc3 first, which helps White develop with bxc3 and Bd4.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 f3 O-O Qd2 d5 exd5 Nxd5 Nxc6 bxc6 Bd4 Bxd4': {
+      idea: 'Trade bishops. White recaptures with the queen, and your queen can then challenge it from b6.',
+      plan: 'After Qxd4 play ...Qb6.',
+      mistake: 'Retreating the bishop and letting White keep the strong d4 bishop pointing at your king.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 f3 O-O Qd2 d5 exd5 Nxd5 Nxc6 bxc6 Bd4 Bxd4 Qxd4 Qb6': {
+      idea: 'Offer a queen trade. Your queen also eyes b2 down the open b-file.',
+      plan: 'After a queen trade, use the open a- and b-files and play ...Be6 and ...Rfd8.',
+      mistake: 'Avoiding the trade and letting White\'s queen dominate the center.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Qd2 O-O': {
+      idea: 'Castle first. If White plays f3 next, you reach the ...d5 position.',
+      plan: 'Against f3 play ...d5 in one move.',
+      mistake: '...d6, giving White the Yugoslav Attack.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 c4 Nf6': {
+      idea: 'Develop and hit e4. White must defend it, usually with Nc3.',
+      plan: 'Next ...d6, then trade knights with ...Nxd4 and develop ...Bg7.',
+      mistake: 'Trying ...d5 against the Maroczy pawns. The c4 and e4 pawns control d5.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 c4 Nf6 Nc3 d6': {
+      idea: 'A small but solid center. ...d6 stops e5 and opens the c8 bishop.',
+      plan: 'Trade knights with ...Nxd4, then ...Bg7 and castle.',
+      mistake: 'Leaving the knights on: in a cramped position, trades help the side with less space.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 c4 Nf6 Nc3 d6 Be2 Nxd4': {
+      idea: 'Trade knights to ease the cramp. White\'s queen must recapture and comes into the center.',
+      plan: 'After Qxd4 play ...Bg7 and castle.',
+      mistake: 'Letting White keep the knight on d4 and use it as a strong outpost.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 c4 Nf6 Nc3 d6 Be2 Nxd4 Qxd4 Bg7': {
+      idea: 'The bishop reaches g7. The d4 queen and your g7 bishop now face each other through the f6 knight.',
+      watch: 'Do not move the f6 knight carelessly: if it leaves, White\'s queen takes on g7 first.',
+      plan: 'Castle, then play ...Be6 and ...Qa5.',
+      mistake: 'Playing ...Nxe4?? here. It uncovers the g7 bishop, but White simply takes it with Qxg7.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 c4 Nf6 Nc3 d6 Be2 Nxd4 Qxd4 Bg7 Be3 O-O': {
+      idea: 'Castle and finish the kingside setup.',
+      plan: 'Next ...Be6 to hit c4, then ...Qa5 and ...Rfc8.',
+      mistake: 'Passive moves like ...Bd7 that do not hit anything. Aim your pieces at c4.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 c4 Nf6 Nc3 d6 Be2 Nxd4 Qxd4 Bg7 Be3 O-O Qd2 Be6': {
+      idea: 'The bishop attacks the c4 pawn, so White must spend time defending it.',
+      plan: 'Play ...Qa5, ...Rfc8 and ...a6, then look for ...b5.',
+      mistake: 'Grabbing on c4 without checking whether White wins it back with tempo.',
+      arrows: [['e6', 'c4']]
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nxc6 bxc6': {
+      idea: 'Recapture toward the center. The c6 pawn controls d5 and the b-file opens for your rook.',
+      watch: 'Qd4 now hits your h8 rook and the a7 pawn along two diagonals.',
+      plan: 'Against Qd4 play ...Nf6, which blocks the diagonal and develops.',
+      mistake: '...dxc6 by habit. It is playable, but ...bxc6 keeps more central control.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nxc6 bxc6 Qd4 Nf6': {
+      idea: 'Block the queen\'s attack on h8 and develop at the same time.',
+      watch: 'White can push e5 to kick the knight.',
+      plan: 'Against e5 put the knight on d5, the strong central square.',
+      mistake: '...f6 to defend: it weakens your king and blocks the knight\'s best square.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nxc6 bxc6 Qd4 Nf6 e5 Nd5': {
+      idea: 'The knight jumps to a strong central square that White pawns cannot attack easily.',
+      watch: 'White can try e6, a pawn sacrifice that opens lines toward your king.',
+      plan: 'Next ...Bg7 and castle, unless White plays e6.',
+      mistake: 'Retreating the knight to g8: it loses time and gives White a free hand.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nxc6 bxc6 Qd4 Nf6 e5 Nd5 e6 f6': {
+      idea: 'Keep the f-file closed. The e6 pawn is cut off and will be traded off.',
+      plan: 'After exd7+ recapture with the bishop.',
+      mistake: '...fxe6, which opens the h5-e8 diagonal and the f-file in front of your own king.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nxc6 bxc6 Qd4 Nf6 e5 Nd5 e6 f6 exd7+ Bxd7': {
+      idea: 'Recapture with the bishop, developing it with tempo.',
+      plan: 'Next ...Bg7 and castle; the half-open b-file and your central pawns give you an active game.',
+      mistake: '...Qxd7, which lets White gain time against your queen.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O O-O Nxe4': {
+      idea: 'The fork trick. If Nxe4, then ...d5 attacks both the e4 knight and the c4 bishop, and you win the piece back.',
+      watch: 'This only works because the bishop is still on c4. With it on b3, the trick fails.',
+      plan: 'After Nxe4 play ...d5.',
+      mistake: 'Not checking first: the trick needs the bishop on c4 and the knight able to be forked on e4.',
+      arrows: [['f6', 'e4']]
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O O-O Nxe4 Nxe4 d5': {
+      idea: 'The fork: the d5 pawn attacks the c4 bishop and the e4 knight. One of them will fall.',
+      plan: 'If White trades on c6, recapture ...bxc6, then take on e4.',
+      mistake: 'Taking the wrong piece first and giving White time to save both.',
+      arrows: [['d5', 'c4'], ['d5', 'e4']]
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O O-O Nxe4 Nxe4 d5 Nxc6 bxc6': {
+      idea: 'Recapture toward the center. The fork is still on.',
+      plan: 'After the bishop moves, take the knight on e4 with the d-pawn.',
+      mistake: 'Recapturing with the queen, which lets White save both pieces.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O O-O Nxe4 Nxe4 d5 Nxc6 bxc6 Bd3 dxe4': {
+      idea: 'Win the piece back. Material is level and your pieces are active.',
+      plan: 'After Bxe4, develop the queen and the c8 bishop.',
+      mistake: 'Leaving the knight alone: it would escape and you would be a piece down.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be3 Nf6 Bc4 O-O O-O Nxe4 Nxe4 d5 Nxc6 bxc6 Bd3 dxe4 Bxe4 Qc7': {
+      idea: 'The queen develops and eyes h2 and e5, while your g7 bishop looks at b2.',
+      plan: 'Play ...Rb8 against b2 and ...Be6, then use your active pieces.',
+      mistake: 'Leaving the c8 bishop and a8 rook at home. Bring them into play quickly.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Nb3 Nf6': {
+      idea: 'Develop and hit e4. The knight on b3 no longer defends anything in the center.',
+      plan: 'Castle next, then ...d6 and ...a5.',
+      mistake: '...d5 too early, before your king is safe.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Nb3 Nf6 Be2 O-O': {
+      idea: 'Castle. White\'s setup is slow, so you have time.',
+      plan: 'Next ...d6, ...Be6 and ...a5.',
+      mistake: 'Starting action on the queenside before your king is safe.'
+    },
+    'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Nb3 Nf6 Be2 O-O O-O d6': {
+      idea: 'A solid center that opens the c8 bishop.',
+      plan: 'Play ...Be6, ...Rc8 and ...a5-a4 to chase the b3 knight.',
+      mistake: 'Forgetting about the c-file: your rook belongs on c8.'
+    },
+    'e4 c5 Nf3 Nc6 Nc3 g6': {
+      idea: 'Keep the same setup. If White plays d4, you are back in the main Accelerated Dragon.',
+      watch: 'White can also choose Bb5 or Bc4 here; the same ideas apply.',
+      plan: 'Against d4 take with ...cxd4, then ...Bg7.',
+      mistake: '...e5, which leaves a hole on d5 for White\'s knight.'
+    },
+    'e4 c5 Nf3 Nc6 Nc3 g6 d4 cxd4': {
+      idea: 'Take in the center. After Nxd4 Bg7 you are in the main line by a different move order.',
+      plan: 'Next ...Bg7, ...Nf6 and castle.',
+      mistake: 'Letting White keep the d4 pawn and push d5.'
+    },
+    'e4 c5 Nf3 d6 d4 cxd4': {
+      idea: 'Same trade as in every Open Sicilian: wing pawn for center pawn.',
+      plan: 'After Nxd4 play ...Nf6 to hit e4.',
+      mistake: 'Allowing dxc5 or d5.'
+    },
+    'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6': {
+      idea: 'Hit e4 at once, so White must spend a move defending it with Nc3.',
+      plan: 'After Nc3 choose ...a6 (Najdorf) or ...g6 (Dragon).',
+      mistake: 'Playing ...g6 before ...Nf6, which lets White set up c4 and a Maroczy Bind.'
+    },
+    'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6': {
+      idea: 'The Najdorf. ...a6 controls b5 and prepares ...e5 without allowing Nb5.',
+      watch: 'White has many sharp systems here (Bg5, Be3 with f3, Bc4). That is why this is optional.',
+      plan: 'Against Be2 play ...e5 to gain central space.',
+      mistake: 'Playing the Najdorf without studying White\'s main attacking systems.'
+    },
+    'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6': {
+      label: 'Classical Dragon (optional)',
+      idea: 'The classical Dragon: the same bishop on g7 as in your main system, but with the pawn already on d6.',
+      watch: 'The ...d5 break now needs two moves, so White\'s Yugoslav Attack (Be3, f3, Qd2, O-O-O) is dangerous.',
+      plan: 'Play ...Bg7, castle and ...Nc6.',
+      mistake: 'Playing it like the Accelerated Dragon. Here ...d5 is slower, so counterplay must come on the c-file.'
+    },
+    'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Be2 e5': {
+      idea: 'Kick the knight and grab central space. The d5 square becomes a hole, so you must control it with pieces.',
+      plan: 'After the knight moves, play ...Be7 and castle, then ...Be6.',
+      mistake: 'Forgetting d5: if a White knight settles there, your position is worse.'
+    },
+    'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Be2 e5 Nb3 Be7': {
+      idea: 'Develop the bishop and prepare to castle.',
+      plan: 'Castle, then ...Be6 and ...Nbd7.',
+      mistake: 'Rushing ...Be6 when f4-f5 can hit it with tempo.'
+    },
+    'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6 Be2 e5 Nb3 Be7 O-O O-O': {
+      idea: 'King safety first.',
+      plan: 'Next ...Be6, ...Nbd7 and ...Rc8, then ...b5.',
+      mistake: 'Allowing Nd5 for free; always keep d5 covered.'
+    },
+    'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6 Be2 Bg7': {
+      idea: 'The bishop reaches the long diagonal.',
+      plan: 'Castle, then ...Nc6.',
+      mistake: 'Delaying castling in an open position.'
+    },
+    'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6 Be2 Bg7 O-O O-O': {
+      idea: 'Castle against the quiet Be2 setup.',
+      plan: 'Next ...Nc6 and ...Bd7.',
+      mistake: 'Allowing f4-e5 by leaving the center unguarded.'
+    },
+    'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6 Be2 Bg7 O-O O-O Be3 Nc6': {
+      idea: 'Develop the last knight and put pressure on d4.',
+      plan: 'Play ...Bd7, ...Rc8 and ...a6 with ...b5.',
+      mistake: '...Ng4 when the e2 bishop can take it.'
+    },
+    'e4 c5 Nf3 e6 d4 cxd4': {
+      idea: 'The usual trade in the center.',
+      plan: 'After Nxd4 play ...a6 to keep White\'s knight out of b5.',
+      mistake: 'Leaving the pawn on c5 to be taken.'
+    },
+    'e4 c5 Nf3 e6 d4 cxd4 Nxd4 a6': {
+      idea: 'The Kan. ...a6 keeps White\'s pieces out of b5 and prepares ...b5 and ...Bb7.',
+      plan: 'Next ...Nf6, ...Qc7 and ...d6.',
+      mistake: 'Developing ...Bb4 too early, where Nb5 or a3 can harass it.'
+    },
+    'e4 c5 Nf3 e6 d4 cxd4 Nxd4 a6 Bd3 Nf6': {
+      idea: 'Develop and hit e4.',
+      plan: 'Next ...Qc7 and ...d6.',
+      mistake: 'Pushing ...b5 before developing the kingside, which keeps your king in the center too long.'
+    },
+    'e4 c5 Nf3 e6 d4 cxd4 Nxd4 a6 Bd3 Nf6 O-O Qc7': {
+      idea: 'The queen eyes e5 and h2, and stops the e5 push.',
+      plan: 'Next ...d6, ...Nbd7 and ...Be7.',
+      mistake: 'Putting the queen on b6, where Nb3 or Be3 can hit it with tempo.'
+    },
+    'e4 c5 Nf3 e6 d4 cxd4 Nxd4 a6 Bd3 Nf6 O-O Qc7 Qe2 d6': {
+      idea: 'A flexible small center that stops e5.',
+      plan: 'Develop ...Nbd7 and ...Be7, castle, then ...b5 and ...Bb7.',
+      mistake: 'Breaking in the center before you have castled.'
+    }
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+;
+(function (g) {
+  g.OL_ANN = g.OL_ANN || {};
+  var A = g.OL_ANN.sicilian = g.OL_ANN.sicilian || {};
+  Object.assign(A, {
+    // ---------------- Alapin 2.c3 ----------------
+    'e4 c5 c3 Nf6': {
+      idea: "The knight attacks e4 at once. White's normal defender, Nc3, is impossible because a pawn stands on c3.",
+      watch: "White usually pushes e5 to chase the knight. That is fine: the e5 pawn becomes a target.",
+      plan: "After e5 go to d5, then attack the e5 pawn with ...d6 and develop ...Nc6.",
+      mistake: "Playing ...g6 and ...Bg7 first. Against 2.c3 the quick knight hit on e4 is simpler and stops White from getting a free big center.",
+      arrows: [['f6', 'e4']]
+    },
+    'e4 c5 c3 Nf6 e5 Nd5': {
+      idea: "The knight jumps to the best square in the center. It cannot be hit by c4 easily, and c3 already took away White's Nc3.",
+      watch: "White may play Bc4 to attack the knight. Then ...Nb6 is the usual answer.",
+      plan: "Next take on d4 if White plays d4, develop ...Nc6, and chip at e5 with ...d6.",
+      mistake: "Retreating the knight to g8 or e4. On d5 it is safe and active."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 d4': {
+      what: "White supports e5 and builds the classical Alapin center with c3 and d4.",
+      threat: "White wants cxd4 next, with pawns on d4 and e5.",
+      avoid: "Do not let White keep a free center: take on d4 now so the c-file can open."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 Nf3': {
+      what: "White develops before playing d4 and keeps the c3 pawn at home.",
+      threat: "Bc4 to chase the d5 knight, or d4 later.",
+      avoid: "Do not take on e5 with nothing developed. Play ...Nc6 first."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4': {
+      idea: "Trade the c-pawn for White's d-pawn. White will recapture with the c-pawn, and the c-file opens for your rook later.",
+      watch: "This same position also comes from the Smith-Morra Gambit (2.d4 cxd4 3.c3 Nf6 4.e5 Nd5), so you learn it once.",
+      plan: "Develop ...Nc6, then hit the e5 pawn with ...d6.",
+      mistake: "Letting White play dxc5 or keep d4 untouched. Taking on d4 is the key move."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3': {
+      what: "White develops first and will take back on d4 next move.",
+      threat: "cxd4, and then Bc4 to hit the d5 knight.",
+      avoid: "Do not try to hold the extra pawn with ...dxc3. Develop with ...Nc6."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 cxd4': {
+      what: "White recaptures at once and has pawns on d4 and e5.",
+      threat: "Nf3 and Bc4, keeping the big center.",
+      avoid: "Do not ignore the e5 pawn. ...d6 attacks it right away."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6': {
+      idea: "Develop the knight. It adds pressure on d4 and on e5.",
+      watch: "White will take back cxd4 and then play Bc4.",
+      plan: "After cxd4 play ...d6 to attack e5.",
+      mistake: "Grabbing material with ...dxc3. It gives White a big lead in development."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6 cxd4 d6': {
+      idea: "Hit the base of White's big pawn: e5 is attacked by the d6 pawn and the c6 knight. If White ever takes on d6 or lets you take on e5, the center opens for your pieces.",
+      watch: "Bc4 attacks the d5 knight. Be ready to retreat it to b6.",
+      plan: "After Bc4 play ...Nb6, then ...e6 or ...Bd7, and castle.",
+      mistake: "Moving the d5 knight away without a reason. Keep it there until it is attacked.",
+      arrows: [['d6', 'e5']]
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6 cxd4 d6 Bc4 Nb6': {
+      idea: "Step out of the attack and hit the c4 bishop at the same time.",
+      watch: "White usually answers Bb5, pinning the c6 knight against the king.",
+      plan: "Break the pin with ...Bd7, take on e5 at the right moment, then develop and castle.",
+      mistake: "Retreating to c7: the knight would block your own pieces."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 cxd4 d6': {
+      idea: "Attack e5 at once. This is the same plan as with 5.Nf3 first, and it reaches the same positions.",
+      watch: "White can defend e5 with Nf3.",
+      plan: "Develop ...Nc6 next, then ...Nb6 if the bishop comes to c4.",
+      mistake: "Playing ...e6 first and forgetting to challenge the e5 pawn."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 cxd4 d6 Nf3 Nc6': {
+      idea: "Develop the knight and put a second attacker on e5 and d4. The position is now the same as the main Alapin line.",
+      watch: "Bc4 hits the d5 knight again.",
+      plan: "Meet Bc4 with ...Nb6 and Bb5 with ...Bd7.",
+      mistake: "Taking on e5 too early, before your pieces are out."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 Nf3 Nc6': {
+      idea: "Develop the knight. It eyes d4 and e5. This position also comes from 2.Nf3 Nc6 3.c3 Nf6 4.e5 Nd5.",
+      watch: "White can chase the d5 knight with Bc4 or play d4 for the full center.",
+      plan: "Against d4 take ...cxd4; against Bc4 retreat ...Nb6.",
+      mistake: "Pushing ...d6 before ...Nc6. Development first."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 Nf3 Nc6 Bc4': {
+      what: "White attacks the d5 knight with the bishop instead of playing d4.",
+      threat: "Nothing big yet, but the bishop aims at f7.",
+      avoid: "Do not leave the knight on d5 to be taken. ...Nb6 also hits the bishop."
+    },
+    'e4 c5 Nf3 Nc6 c3 Nf6 e5 Nd5 d4': {
+      what: "White builds the Alapin center with c3, d4 and e5.",
+      threat: "cxd4 next, with a big pawn center.",
+      avoid: "Take on d4 at once so White cannot keep both pawns."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 Nf3 Nc6 Bc4 Nb6': {
+      idea: "Retreat with tempo: the knight attacks the c4 bishop.",
+      watch: "After Bb3 the bishop still aims at f7, so do not weaken that square.",
+      plan: "Next ...d5 to attack the e5 pawn and open your c8 bishop.",
+      mistake: "Retreating to c7. On b6 the knight hits the bishop and watches d5."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 Nf3 Nc6 Bc4 Nb6 Bb3 d5': {
+      idea: "Strike in the center. If White takes en passant with exd6, the e5 pawn disappears and your queen recaptures with a free position.",
+      watch: "If White keeps the pawn on e5, your ...c4 and ...Bg4 ideas still give good play.",
+      plan: "After exd6 play ...Qxd6, then ...c4 and ...Bg4.",
+      mistake: "Playing ...d6 slowly and allowing White to keep a comfortable center.",
+      arrows: [['d7', 'd5']]
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 Nf3 Nc6 Bc4 Nb6 Bb3 d5 exd6 Qxd6': {
+      idea: "Recapture with the queen. Your pieces are active and White has no center pawns left on the e- and d-files.",
+      watch: "The queen on d6 can be hit by Na3-b5 or Bf4 later. Keep an eye on it.",
+      plan: "Next ...c4 to chase the b3 bishop, then ...Bg4.",
+      mistake: "Recapturing with the e-pawn and blocking your own bishop."
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 Nf3 Nc6 Bc4 Nb6 Bb3 d5 exd6 Qxd6 O-O c4': {
+      idea: "Gain space and push the bishop off its diagonal toward f7.",
+      watch: "The c4 pawn can become a target later with b3. Be ready to defend it or trade it.",
+      plan: "After Bc2 develop ...Bg4, pinning the f3 knight.",
+      mistake: "Leaving the bishop on b3 aiming at f7 while you play slow moves.",
+      arrows: [['c5', 'c4']]
+    },
+    'e4 c5 c3 Nf6 e5 Nd5 Nf3 Nc6 Bc4 Nb6 Bb3 d5 exd6 Qxd6 O-O c4 Bc2 Bg4': {
+      idea: "Develop the bishop with a pin on the f3 knight. White cannot easily play d4 or Ne5.",
+      watch: "After h3 keep the pin with ...Bh5. Do not give the bishop away for nothing.",
+      plan: "Castle queenside or play ...e6 and ...Be7, then use your active pieces.",
+      mistake: "Playing ...e6 before the bishop comes out and shutting it in."
+    },
+
+    // ---------------- 2.Nf3 Nc6 3.c3 ----------------
+    'e4 c5 Nf3 Nc6 c3 Nf6': {
+      idea: "Same answer as against 2.c3: the knight attacks e4, and White cannot defend it with Nc3.",
+      watch: "White will push e5. Go to d5 and you reach the Alapin positions you already know.",
+      plan: "After e5 play ...Nd5, then ...cxd4 and ...d6.",
+      mistake: "Playing ...g6 automatically. Against c3 the knight hit on e4 is better.",
+      arrows: [['f6', 'e4']]
+    },
+    'e4 c5 Nf3 Nc6 c3 Nf6 e5 Nd5': {
+      idea: "The knight goes to the center. This is now exactly the Alapin position after 2.c3 Nf6 3.e5 Nd5 4.Nf3 Nc6.",
+      watch: "White can choose between d4 and Bc4.",
+      plan: "Against d4 take ...cxd4; against Bc4 play ...Nb6.",
+      mistake: "Retreating the knight to g8. On d5 it is safe and strong."
+    },
+    'e4 c5 Nf3 Nc6 c3 Nf6 e5 Nd5 d4 cxd4': {
+      idea: "Trade the c-pawn for the d-pawn and open the c-file.",
+      watch: "After cxd4 you are back in the main Alapin line.",
+      plan: "Next ...d6 to attack e5.",
+      mistake: "Letting White keep both center pawns without a fight."
+    },
+
+    // ---------------- 2.d4: Smith-Morra and 3.Qxd4 ----------------
+    'e4 c5 d4 cxd4': {
+      idea: "Take the pawn. White gave it away, and you remove a central pawn.",
+      watch: "White can gambit with 3.c3 (the Smith-Morra) or take back with the queen.",
+      plan: "Against 3.c3 play ...Nf6; against 3.Qxd4 play ...Nc6 with tempo on the queen.",
+      mistake: "Not taking. Letting White play d5 or dxc5 gives White a free center."
+    },
+    'e4 c5 d4 cxd4 c3': {
+      what: "The Smith-Morra Gambit: White offers a second pawn for fast development and open lines.",
+      threat: "After ...dxc3 Nxc3 White gets quick piece play with Bc4, Nf3, O-O and Qe2.",
+      avoid: "You do not have to accept. ...Nf6 hits e4 and turns the game into an Alapin you know."
+    },
+    'e4 c5 d4 cxd4 Qxd4': {
+      what: "White takes back with the queen right away and puts it in the center.",
+      threat: "Nothing yet, but White hopes for a quick Nc3 and Bg5.",
+      avoid: "Do not leave the queen there in peace: ...Nc6 attacks it and develops."
+    },
+    'e4 c5 d4 cxd4 c3 Nf6': {
+      idea: "Decline the gambit by attacking e4. White cannot defend with Nc3 because the c3 square is taken.",
+      watch: "After 4.e5 Nd5 the position is exactly the Alapin after 2.c3 Nf6 3.e5 Nd5 4.d4 cxd4.",
+      plan: "After e5 play ...Nd5, then ...Nc6 and ...d6.",
+      mistake: "Accepting with ...dxc3 without knowing the theory: White gets a fast attack for the pawn.",
+      arrows: [['f6', 'e4']]
+    },
+    'e4 c5 d4 cxd4 c3 Nf6 e5 Nd5': {
+      idea: "The knight goes to the center. You have reached the Alapin by a different move order, and you are still a pawn up for the moment.",
+      watch: "White will take back on d4 with the c-pawn or play Nf3 first.",
+      plan: "Develop ...Nc6, then attack e5 with ...d6.",
+      mistake: "Defending the d4 pawn with ...e5 or ...Qa5. Just develop and let White recapture."
+    },
+    'e4 c5 d4 cxd4 Qxd4 Nc6': {
+      idea: "Develop with tempo: the knight attacks the queen, so White has to move it again.",
+      watch: "The queen usually goes to d3, e3, a4 or back to d1.",
+      plan: "Then ...Nf6, ...g6, ...Bg7 and castle: your normal Dragon setup.",
+      mistake: "Developing a piece that does not hit the queen. Use the free tempo.",
+      arrows: [['c6', 'd4']]
+    },
+    'e4 c5 d4 cxd4 Qxd4 Nc6 Qd3 Nf6': {
+      idea: "Develop and attack e4.",
+      watch: "White will defend e4 with Nc3.",
+      plan: "Next ...g6, ...Bg7 and castle.",
+      mistake: "Moving the queen out early. Your lead in development comes from bringing pieces out."
+    },
+    'e4 c5 d4 cxd4 Qxd4 Nc6 Qd3 Nf6 Nc3 g6': {
+      idea: "The Dragon setup: the bishop goes to g7, where it watches the long diagonal.",
+      watch: "White may try Bg5 or Be3 with Qd2 ideas. Castle quickly.",
+      plan: "Next ...Bg7 and ...O-O.",
+      mistake: "Playing ...e5 and leaving a hole on d5 for White's knight."
+    },
+    'e4 c5 d4 cxd4 Qxd4 Nc6 Qd3 Nf6 Nc3 g6 Nf3 Bg7': {
+      idea: "The bishop takes its best diagonal, from g7 all the way to a1.",
+      watch: "e4 is still a target. Count its defenders before White plays e5.",
+      plan: "Castle next, then ...d6.",
+      mistake: "Delaying castling to grab a pawn."
+    },
+    'e4 c5 d4 cxd4 Qxd4 Nc6 Qd3 Nf6 Nc3 g6 Nf3 Bg7 Be2 O-O': {
+      idea: "King safety first. Your king is safe behind the g6 pawn and the g7 bishop.",
+      watch: "White has spent time with the queen, so you are not behind in development.",
+      plan: "Next ...d6, then ...Bg4 or ...Be6 and a rook to c8.",
+      mistake: "Pushing kingside pawns in front of your castled king."
+    },
+    'e4 c5 d4 cxd4 Qxd4 Nc6 Qd3 Nf6 Nc3 g6 Nf3 Bg7 Be2 O-O O-O d6': {
+      idea: "Open the c8 bishop and control e5. This is the standard Dragon structure.",
+      watch: "White's queen on d3 can be hit by ...Nb4 or ...Bf5 later.",
+      plan: "Develop the bishop, put a rook on c8, and play on the c-file.",
+      mistake: "Pushing ...e5 and giving White the d5 square."
+    },
+
+    // ---------------- Grand Prix 2.Nc3 / 3.f4 and Closed ----------------
+    'e4 c5 Nc3 Nc6': {
+      idea: "Develop the knight and keep a close eye on d4. Against 2.Nc3 you use the same ...Nc6, ...g6, ...Bg7 setup as everywhere else.",
+      watch: "White may play f4 (the Grand Prix) or g3 (the Closed Sicilian).",
+      plan: "Next ...g6 and ...Bg7.",
+      mistake: "Playing ...e5 early and giving White the d5 square for the c3 knight."
+    },
+    'e4 c5 Nc3 Nc6 f4': {
+      what: "The Grand Prix Attack: White plans Nf3, Bc4 or Bb5, castling and then f5 for a kingside attack.",
+      threat: "A fast attack against your king with f5 and Qe1-h4.",
+      avoid: "Do not open the kingside early. Build your setup with ...g6 and ...Bg7, and be ready to blunt Bc4 with ...e6."
+    },
+    'e4 c5 Nc3 Nc6 g3': {
+      what: "The Closed Sicilian: White fianchettoes the bishop and keeps the center closed.",
+      threat: "A slow kingside attack later with f4, Nf3 and f5.",
+      avoid: "Do not panic and do not open the center. Mirror the setup with ...g6, ...Bg7 and ...d6."
+    },
+    'e4 c5 Nc3 Nc6 f4 g6': {
+      idea: "Prepare ...Bg7, where the bishop hits the long diagonal and protects your king.",
+      watch: "White's f4 pawn supports e5 and f5 later.",
+      plan: "Next ...Bg7, then ...e6 and ...Nge7 if the bishop comes to c4.",
+      mistake: "Playing ...e5 early. It makes the c8 bishop passive and gives White f4xe5 ideas."
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7': {
+      idea: "The bishop goes to its best square. It watches d4 and the long diagonal toward b2.",
+      watch: "White's bishop will come to c4 or b5 next.",
+      plan: "Against Bc4 play ...e6; against Bb5 jump to ...Nd4.",
+      mistake: "Developing ...Nf6 here. The e5 push would chase the knight away."
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bc4': {
+      what: "The bishop aims at f7, the weakest square near your king.",
+      threat: "f5 and Ng5 ideas against f7, and a fast attack.",
+      avoid: "Do not let the bishop stay strong. ...e6 blocks its diagonal and prepares ...d5."
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bb5': {
+      what: "The bishop pins the c6 knight and may take it to damage your pawns.",
+      threat: "Bxc6, then e5 or d4, to break your structure.",
+      avoid: "Do not leave the knight to be taken for nothing. ...Nd4 jumps to a strong square and attacks the bishop."
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bc4 e6': {
+      idea: "Block the bishop's diagonal to f7 and prepare ...d5, which would hit the bishop. The pawn also stops f5 ideas.",
+      watch: "White may push e5 to cramp you. Then ...d6 or ...d5 challenges it.",
+      plan: "Next ...Nge7, then ...d5 with tempo on the bishop.",
+      mistake: "Playing ...Nf6 here. After e5 the knight has to run.",
+      arrows: [['e7', 'e6']]
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bc4 e6 O-O Nge7': {
+      idea: "The knight goes to e7, where it supports ...d5 and cannot be chased by e5.",
+      watch: "White's f5 push is less dangerous now because your e6 pawn and e7 knight cover it.",
+      plan: "Next ...d5 to hit the bishop, then castle.",
+      mistake: "Castling before ...d5 and allowing f5 with an attack."
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bc4 e6 O-O Nge7 d3 d5': {
+      idea: "Strike in the center and gain time on the c4 bishop. Your pawns now control e4 and c4.",
+      watch: "The d5 pawn is attacked by the bishop, the e4 pawn and the c3 knight. It is defended by e6, the e7 knight and the queen, so it holds.",
+      plan: "After Bb3 castle, then ...b6 and ...Bb7 or ...Na5 to trade the bishop.",
+      mistake: "Taking on e4 too early and opening lines for White's pieces.",
+      arrows: [['d7', 'd5']]
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bc4 e6 O-O Nge7 d3 d5 Bb3 O-O': {
+      idea: "Castle into a safe king position. Your center is strong and White's bishop is blunted.",
+      watch: "White may try f5 to open lines. Keep the e6 pawn solid.",
+      plan: "Play ...b6, ...Bb7 or ...Na5 to trade White's good bishop, and later ...Rc8.",
+      mistake: "Pushing ...d4 too early: it gives White's knight the e4 square."
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bb5 Nd4': {
+      idea: "Jump to the strong d4 square. The knight attacks the b5 bishop and the f3 knight, and White's c-pawn cannot chase it from c3 because the c3 knight blocks it.",
+      watch: "If White trades with Nxd4 cxd4, your pawn on d4 hits the c3 knight.",
+      plan: "Next ...a6 to ask the bishop where it is going, then ...b5.",
+      mistake: "Letting White take on c6 and double your pawns for free.",
+      arrows: [['c6', 'd4']]
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bb5 Nd4 O-O a6': {
+      idea: "Attack the bishop again and prepare ...b5 to gain queenside space.",
+      watch: "If White retreats to e2, your knight can take it or you can push ...b5.",
+      plan: "Next ...b5 and ...Bb7, pointing at e4.",
+      mistake: "Taking on f3 with check too early: it helps White's queen come into the game."
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bb5 Nd4 O-O a6 Be2 b5': {
+      idea: "Gain space on the queenside, where you are stronger. The b-pawn can push on to b4 to chase the c3 knight.",
+      watch: "White may trade on d4 with Nxd4. Then ...cxd4 hits the c3 knight.",
+      plan: "Next ...Bb7 to pressure e4.",
+      mistake: "Rushing ...b4 before your pieces are ready."
+    },
+    'e4 c5 Nc3 Nc6 f4 g6 Nf3 Bg7 Bb5 Nd4 O-O a6 Be2 b5 d3 Bb7': {
+      idea: "The bishop aims down the long diagonal at e4 and, behind it, the white king.",
+      watch: "White will try f5 or e5 on the kingside. Keep your knight on d4 as long as you can.",
+      plan: "Continue ...e6, ...Ne7 and castle, then push ...b4 to win space.",
+      mistake: "Moving the d4 knight away. It is your best piece."
+    },
+    'e4 c5 Nc3 Nc6 g3 g6': {
+      idea: "Copy White's fianchetto. Your bishop on g7 will fight White's bishop on g2.",
+      watch: "The Closed Sicilian is slow. You have time to build the setup.",
+      plan: "Next ...Bg7, ...d6, then ...e6 and ...Nge7.",
+      mistake: "Opening the center with ...d5 too early, which helps White's better-developed pieces."
+    },
+    'e4 c5 Nc3 Nc6 g3 g6 Bg2 Bg7': {
+      idea: "The bishop takes the long diagonal and watches d4 and b2.",
+      watch: "White will play d3 and then f4 or Be3.",
+      plan: "Next ...d6, then ...e6 and ...Nge7.",
+      mistake: "Playing ...Nf6 here. White can push e5 or f4-e5 and chase it."
+    },
+    'e4 c5 Nc3 Nc6 g3 g6 Bg2 Bg7 d3 d6': {
+      idea: "Control e5 and open the c8 bishop. This is the standard closed setup for both sides.",
+      watch: "White's plan is f4, Nf3 and f5 on the kingside.",
+      plan: "Next ...e6 and ...Nge7, castle, then expand on the queenside with ...Rb8 and ...b5.",
+      mistake: "Playing ...e5 and leaving d5 to White's knight."
+    },
+    'e4 c5 Nc3 Nc6 g3 g6 Bg2 Bg7 d3 d6 f4 e6': {
+      idea: "Control f5 and d5. The pawn stops White's f5 push and prepares ...Nge7.",
+      watch: "White may try e5 later. Then you can take or leave it, depending on the position.",
+      plan: "Next ...Nge7 and castle.",
+      mistake: "Playing ...Nf6 and walking into e5."
+    },
+    'e4 c5 Nc3 Nc6 g3 g6 Bg2 Bg7 d3 d6 f4 e6 Nf3 Nge7': {
+      idea: "The knight goes to e7, where it supports ...d5 and ...f5 and is safe from e5.",
+      watch: "White will castle and start the kingside plan. Get your king safe too.",
+      plan: "Castle next, then ...Rb8 and ...b5 on the queenside.",
+      mistake: "Leaving your king in the center while White prepares f5."
+    },
+    'e4 c5 Nc3 Nc6 g3 g6 Bg2 Bg7 d3 d6 f4 e6 Nf3 Nge7 O-O O-O': {
+      idea: "Both kings are safe. Now each side plays on its own wing: White on the kingside, you on the queenside.",
+      watch: "White may push f5. Answer calmly with ...exf5 or ...gxf5 only when you have checked it.",
+      plan: "...Rb8, ...b5 and ...b4 to chase the c3 knight. ...Nd4 is often a strong square too.",
+      mistake: "Waiting passively. Your queenside play must be as fast as White's kingside play."
+    },
+
+    // ---------------- 2.f4 ----------------
+    'e4 c5 f4 Nc6': {
+      idea: "Develop the knight. Against 2.f4 you use the same setup as against the Grand Prix: ...Nc6, ...g6, ...Bg7.",
+      watch: "If White plays Nc3 soon, the position is exactly a Grand Prix.",
+      plan: "Next ...g6 and ...Bg7.",
+      mistake: "Playing ...e5 and allowing fxe5 or Nf3 with a strong center for White."
+    },
+    'e4 c5 f4 Nc6 Nf3 g6': {
+      idea: "Prepare ...Bg7, where the bishop hits d4 and the long diagonal.",
+      watch: "White can play Nc3 (back into the Grand Prix) or d4 to open the center.",
+      plan: "Next ...Bg7. If White plays d4, take with ...cxd4.",
+      mistake: "Developing ...Nf6 too early, before White commits."
+    },
+    'e4 c5 f4 Nc6 Nf3 g6 Nc3': {
+      what: "White transposes into the Grand Prix Attack (2.Nc3 Nc6 3.f4 g6 4.Nf3).",
+      threat: "Bc4 or Bb5 next, then castling and f5.",
+      avoid: "Do not change plans. ...Bg7 and the Grand Prix answers you know."
+    },
+    'e4 c5 f4 Nc6 Nf3 g6 d4': {
+      what: "White opens the center. With the pawn on f4, the e3 square and the g1-a7 diagonal are weak.",
+      threat: "d5 to chase the c6 knight if you do not react.",
+      avoid: "Do not let White play d5 for free. Take with ...cxd4."
+    },
+    'e4 c5 f4 Nc6 Nf3 g6 d4 cxd4': {
+      idea: "Trade off White's center pawn. The c-file opens for you.",
+      watch: "After Nxd4 the knight on d4 can become a target for ...Bg7 and the c6 knight.",
+      plan: "Next ...Bg7, hitting the d4 knight.",
+      mistake: "Allowing d5 and a space advantage for White."
+    },
+    'e4 c5 f4 Nc6 Nf3 g6 d4 cxd4 Nxd4 Bg7': {
+      idea: "The bishop attacks the d4 knight. It is now hit twice (c6 knight and g7 bishop) and defended only by the queen.",
+      watch: "If White ignores it, ...Nxd4 Qxd4 Bxd4 wins material. White must defend with Be3, Nb3 or c3.",
+      plan: "After Be3 play ...Nf6, hitting e4.",
+      mistake: "Developing a piece that does nothing. Use the pressure on d4.",
+      arrows: [['g7', 'd4']]
+    },
+    'e4 c5 f4 Nc6 Nf3 g6 d4 cxd4 Nxd4 Bg7 Be3 Nf6': {
+      idea: "Develop and attack e4. White's d-pawn is gone, so no pawn can defend it.",
+      watch: "White will defend e4 with Nc3. The d4 knight still needs watching.",
+      plan: "Next castle, then ...d6 and ...Qb6 or ...Ng4 ideas against the e3 bishop.",
+      mistake: "Forgetting about e4. It has no pawn defender, so keep the pressure on it."
+    },
+    'e4 c5 f4 Nc6 Nf3 g6 d4 cxd4 Nxd4 Bg7 Be3 Nf6 Nc3 O-O': {
+      idea: "Castle into safety. Your bishop on g7 and pawn on g6 protect the king.",
+      watch: "White can push e5 to chase the f6 knight. Then ...Ne8 or ...Ng4 are possible.",
+      plan: "Next ...d6 to fight against e5, then ...Nxd4 and ...Be6 or ...Qa5.",
+      mistake: "Letting White push e5 and f5 without reacting in the center."
+    },
+
+    // ---------------- Rossolimo 3.Bb5 ----------------
+    'e4 c5 Nf3 Nc6 Bb5 g6': {
+      idea: "Keep your setup: the bishop on g7 will support ...e5 and control d4.",
+      watch: "White may take on c6 to double your pawns. That is fine: you get the bishop pair.",
+      plan: "Next ...Bg7, then ...e5 or ...Nf6.",
+      mistake: "Playing ...a6 at once and allowing Bxc6 with a lead in development."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 O-O': {
+      what: "White castles and keeps the option of taking on c6.",
+      threat: "c3 and d4 to build a center, or Re1 and Bxc6 then e5.",
+      avoid: "Do not forget your development. ...Bg7 comes first."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 Bxc6': {
+      what: "White gives up the bishop at once to damage your pawn structure.",
+      threat: "A quiet game with d3, h3 and Nc3, aiming at your doubled c-pawns later.",
+      avoid: "Do not take back with the b-pawn by habit. ...dxc6 opens your queen and c8 bishop."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7': {
+      idea: "The bishop goes to g7 and protects your king. It also points at d4.",
+      watch: "White will choose between c3 (to prepare d4) and Re1 (to support e5).",
+      plan: "In both cases ...e5 is a good answer, taking control of d4.",
+      mistake: "Playing ...Nf6 without checking e5 tricks."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 c3': {
+      what: "White prepares d4 to take the center.",
+      threat: "d4 next, opening the center while your king is still in the middle.",
+      avoid: "Do not allow d4 cheaply. ...e5 takes control of d4."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 Re1': {
+      what: "The rook supports e4 and prepares e5 after Bxc6.",
+      threat: "Bxc6 and e5, chasing your pieces back.",
+      avoid: "Do not let White push e5 for free. ...e5 stops it."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 c3 e5': {
+      idea: "Stop d4. With pawns on c5 and e5 you control d4, and the g7 bishop is now a solid defender.",
+      watch: "The d5 square is a little weak. Keep a piece ready to cover it.",
+      plan: "Next ...Nge7 and castle, then ...d6.",
+      mistake: "Playing ...Nf6, which can be hit by d4 and then e5 ideas.",
+      arrows: [['e7', 'e5']]
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 c3 e5 d3 Nge7': {
+      idea: "The knight goes to e7, so if White takes on c6 you take back with the knight and keep good pawns. The f-pawn also stays free for ...f5.",
+      watch: "White may try d4 or b4 to open lines. Castle soon.",
+      plan: "Next ...d6 and ...O-O.",
+      mistake: "Putting the knight on f6, where it blocks the f-pawn."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 c3 e5 d3 Nge7 Be3 d6': {
+      idea: "Protect e5 and open the c8 bishop. Your setup is complete.",
+      watch: "White may push d4. Taking with ...exd4 and then castling is fine.",
+      plan: "Castle, then ...h6 and ...f5 or ...Be6.",
+      mistake: "Playing ...f5 before castling. Your king would be stuck in the center."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 Bxc6 dxc6': {
+      idea: "Take toward the center with the d-pawn. It opens the d-file for your queen and frees the c8 bishop, and you keep the bishop pair.",
+      watch: "Your c-pawns are doubled, but they control important squares like d4 and b5.",
+      plan: "Next ...Bg7, ...Nf6 and castle.",
+      mistake: "Thinking doubled pawns mean you are worse. Open lines and two bishops are good compensation."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 Bxc6 dxc6 d3 Bg7': {
+      idea: "The bishop goes to its usual diagonal.",
+      watch: "White will play h3 to stop ...Bg4, then Nc3 and Be3.",
+      plan: "Next ...Nf6 and castle.",
+      mistake: "Trading queens on d1 without a reason. Keep pieces on and use the bishops."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 Bxc6 dxc6 d3 Bg7 h3 Nf6': {
+      idea: "Develop the knight and get ready to castle.",
+      watch: "The knight can later go to d7 to support ...e5.",
+      plan: "Castle next, then ...b6 and ...Be6 or ...Nd7 and ...e5.",
+      mistake: "Leaving the king in the center while the d-file is open."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 Bxc6 dxc6 d3 Bg7 h3 Nf6 Nc3 O-O': {
+      idea: "Your king is safe and your two bishops are ready for the middlegame.",
+      watch: "White will try to trade a pair of bishops with Be3 and Qd2.",
+      plan: "...b6, ...Nd7 and ...e5, or ...Nd7 and ...f5 later.",
+      mistake: "Letting White trade off your dark-squared bishop cheaply."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 Re1 e5': {
+      idea: "Take e5 with a pawn so White cannot push there. It also controls d4.",
+      watch: "White often takes on c6 and plays d3. Recapture with the d-pawn.",
+      plan: "After Bxc6 play ...dxc6, then ...Ne7 and castle.",
+      mistake: "Playing ...Nf6 and allowing Bxc6 followed by e5."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 Re1 e5 Bxc6 dxc6': {
+      idea: "Take with the d-pawn: the queen and c8 bishop open up, and you get the bishop pair.",
+      watch: "White will try to attack your e5 pawn later with d3, Nbd2-c4 or Na3-c4.",
+      plan: "Next ...Ne7, then castle and ...f6 if e5 needs support.",
+      mistake: "Recapturing with the b-pawn, which blocks your queen and bishop."
+    },
+    'e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 Re1 e5 Bxc6 dxc6 d3 Ne7': {
+      idea: "The knight develops without blocking the f-pawn. Later ...f6 can support e5.",
+      watch: "White's knight may come to c4 to hit e5. Keep e5 defended.",
+      plan: "Castle, then ...f6, ...Be6 and ...Qc7.",
+      mistake: "Putting the knight on f6, where it blocks the f-pawn and can be hit."
+    },
+
+    // ---------------- Bowdler 2.Bc4 and 2.Nf3 Nc6 3.Bc4 ----------------
+    'e4 c5 Bc4 e6': {
+      idea: "Block the bishop's diagonal to f7 and prepare ...d5, which will hit the bishop with tempo.",
+      watch: "The e6 pawn shuts in your c8 bishop for now, but after ...d5 and an exchange on d5 it opens again.",
+      plan: "Next ...d5.",
+      mistake: "Playing ...Nc6 and ...g6 on autopilot. The bishop on c4 then stays strong against f7.",
+      arrows: [['e7', 'e6']]
+    },
+    'e4 c5 Bc4 e6 Nf3 d5': {
+      idea: "Hit the bishop and take the center. White has to take on d5 or move the bishop again.",
+      watch: "After exd5 take back with the e-pawn: it opens your c8 bishop.",
+      plan: "After exd5 exd5, develop ...Nc6, ...Nf6 and ...Bd6.",
+      mistake: "Developing slowly and letting the bishop stay on c4 without a fight.",
+      arrows: [['d7', 'd5']]
+    },
+    'e4 c5 Bc4 e6 Nf3 d5 exd5 exd5': {
+      idea: "Recapture with the pawn. You keep a pawn in the center and your c8 bishop can come out.",
+      watch: "The bishop on c4 is attacked by your d5 pawn. White will move it with check on b5.",
+      plan: "Block a check on b5 with ...Nc6, then ...Nf6 and ...Bd6.",
+      mistake: "Taking back with the queen, which can be chased by Nc3."
+    },
+    'e4 c5 Bc4 e6 Nf3 d5 exd5 exd5 Bb5+ Nc6': {
+      idea: "Block the check with a developing move.",
+      watch: "The c6 knight is pinned, so do not move it until you have castled or broken the pin.",
+      plan: "Next ...Nf6, ...Bd6 and castle.",
+      mistake: "Blocking with ...Kf8 or ...Bd7 without thinking. ...Nc6 develops a piece."
+    },
+    'e4 c5 Bc4 e6 Nf3 d5 exd5 exd5 Bb5+ Nc6 O-O Nf6': {
+      idea: "Develop and get ready to castle.",
+      watch: "The e-file is open. Watch for Re1+ before you castle: ...Be7 blocks it.",
+      plan: "Next ...Be7 or ...Bd6, then ...O-O.",
+      mistake: "Leaving the king in the middle of the open e-file."
+    },
+    'e4 c5 Nf3 Nc6 Bc4 e6': {
+      idea: "Block the bishop's diagonal to f7 and prepare ...d5, gaining time on the bishop.",
+      watch: "The same idea works against 2.Bc4: ...e6 and ...d5.",
+      plan: "Next ...d5.",
+      mistake: "Playing ...g6 here and letting White hit f7 with Ng5 or Qb3 ideas.",
+      arrows: [['e7', 'e6']]
+    },
+    'e4 c5 Nf3 Nc6 Bc4 e6 O-O d5': {
+      idea: "Hit the bishop and take the center.",
+      watch: "After exd5 take back with the e-pawn so your c8 bishop is free.",
+      plan: "After exd5 exd5, develop ...Bd6, ...Nge7 or ...Nf6 and castle.",
+      mistake: "Waiting with ...a6 or ...Nf6 and letting White play d4 first.",
+      arrows: [['d7', 'd5']]
+    },
+    'e4 c5 Nf3 Nc6 Bc4 e6 O-O d5 exd5 exd5': {
+      idea: "Recapture with the pawn: you keep a central pawn and open the c8 bishop.",
+      watch: "White's bishop is attacked and may go to b5 to pin your knight. Then a check on the e-file can follow.",
+      plan: "Develop ...Bd6 and ...Nge7, then castle.",
+      mistake: "Moving the king or queen onto the open e-file before you castle."
+    },
+    'e4 c5 Nf3 Nc6 Bc4 e6 O-O d5 exd5 exd5 Bb5 Bd6': {
+      idea: "Develop the bishop to its best square. It watches the kingside and gets ready for castling.",
+      watch: "White may give checks on the e-file with Re1+ or Qe2+. Block with ...Nge7 or ...Be6.",
+      plan: "Next ...Nge7 and ...O-O.",
+      mistake: "Delaying castling. Your king is still on the open e-file."
+    },
+
+    // ---------------- Wing Gambit 2.b4 ----------------
+    'e4 c5 b4 cxb4': {
+      idea: "Take the pawn. White gives it to pull your c-pawn away from the center.",
+      watch: "White will play a3 to open lines on the queenside.",
+      plan: "Next ...d5, hitting e4 at once.",
+      mistake: "Defending the b4 pawn with ...bxa3 or ...a5. Strike in the center instead."
+    },
+    'e4 c5 b4 cxb4 a3 d5': {
+      idea: "Hit e4 right away. This is the simplest answer: you fight for the center instead of holding on to b4.",
+      watch: "After exd5 take back with the queen. It is safe on d5 because your b4 pawn controls c3: Nc3 would just lose the knight.",
+      plan: "After exd5 Qxd5, play ...e5 and develop.",
+      mistake: "Taking on a3 with ...bxa3: White gets fast development and open files.",
+      arrows: [['d7', 'd5']]
+    },
+    'e4 c5 b4 cxb4 a3 d5 exd5 Qxd5': {
+      idea: "The queen takes back. It is safe because the b4 pawn covers c3, so Nc3 cannot chase it yet.",
+      watch: "White will try to develop fast with Nf3 and axb4.",
+      plan: "Next ...e5 to take the center.",
+      mistake: "Moving the queen again. Develop pieces and pawns instead."
+    },
+    'e4 c5 b4 cxb4 a3 d5 exd5 Qxd5 Nf3 e5': {
+      idea: "Take the center with the e-pawn. It also opens the f8 bishop.",
+      watch: "White can take on b4 with the a-pawn. Your f8 bishop takes back.",
+      plan: "After axb4 play ...Bxb4.",
+      mistake: "Forgetting that the e5 pawn needs protection later."
+    },
+    'e4 c5 b4 cxb4 a3 d5 exd5 Qxd5 Nf3 e5 axb4 Bxb4': {
+      idea: "Take back and develop the bishop at the same time.",
+      watch: "If White plays Nc3, your bishop can take it and then trade queens.",
+      plan: "Against Nc3 play ...Bxc3 and ...Qxd1+.",
+      mistake: "Leaving the bishop where Ba3 or c3 can hit it without a plan."
+    },
+    'e4 c5 b4 cxb4 a3 d5 exd5 Qxd5 Nf3 e5 axb4 Bxb4 Nc3 Bxc3': {
+      idea: "Trade the bishop for the knight that was attacking your queen.",
+      watch: "After dxc3 White's queen faces yours on the d-file. Trade it.",
+      plan: "Next ...Qxd1+.",
+      mistake: "Moving your queen away and letting White keep a lead in development."
+    },
+    'e4 c5 b4 cxb4 a3 d5 exd5 Qxd5 Nf3 e5 axb4 Bxb4 Nc3 Bxc3 dxc3 Qxd1+': {
+      idea: "Trade queens with check. White's king has to move, so White can no longer castle.",
+      watch: "You are a pawn up and White has doubled c-pawns. The endgame is good for you.",
+      plan: "Develop ...Nc6, ...Bg4 or ...Be6, castle, and use your extra pawn.",
+      mistake: "Avoiding the queen trade. With queens off, White has no attack for the lost pawn."
+    },
+
+    // ---------------- 2.d3 ----------------
+    'e4 c5 d3 Nc6': {
+      idea: "Develop the knight. Against the quiet 2.d3 you use the same ...Nc6, ...g6, ...Bg7 setup.",
+      watch: "White usually plays the King's Indian Attack: g3, Bg2, f4 or Nf3, and O-O.",
+      plan: "Next ...g6 and ...Bg7.",
+      mistake: "Playing ...e5 early and giving White the d5 square."
+    },
+    'e4 c5 d3 Nc6 g3 g6': {
+      idea: "Mirror the fianchetto. Your bishop on g7 will balance White's on g2.",
+      watch: "This is a slow line. Use the time to complete development.",
+      plan: "Next ...Bg7.",
+      mistake: "Opening the center early with ...d5, which helps White's quick development."
+    },
+    'e4 c5 d3 Nc6 g3 g6 Bg2 Bg7': {
+      idea: "The bishop takes the long diagonal and watches the queenside.",
+      watch: "White's f4 push prepares kingside play.",
+      plan: "Next ...d6, ...e6 and ...Nge7.",
+      mistake: "Playing ...Nf6, which can be chased by e5 later."
+    },
+    'e4 c5 d3 Nc6 g3 g6 Bg2 Bg7 f4 d6': {
+      idea: "Control e5 and open the c8 bishop.",
+      watch: "White may try e5 once its pieces are ready.",
+      plan: "Next ...e6 and ...Nge7, castle, then ...Rb8 and ...b5.",
+      mistake: "Allowing f5 for free. ...e6 is coming."
+    },
+    'e4 c5 d3 Nc6 g3 g6 Bg2 Bg7 f4 d6 Nf3 e6': {
+      idea: "Control f5 and d5 so White's f5 push is harder.",
+      watch: "e5 is a typical White push. Your d6 and e6 pawns are ready to meet it.",
+      plan: "Next ...Nge7 and castle.",
+      mistake: "Playing ...Nf6 and walking into e5."
+    },
+    'e4 c5 d3 Nc6 g3 g6 Bg2 Bg7 f4 d6 Nf3 e6 O-O Nge7': {
+      idea: "The knight goes to e7, where it supports ...d5 and ...f5 and is safe from e5.",
+      watch: "Castle next before White starts a kingside attack.",
+      plan: "Castle, then ...Rb8 and ...b5 on the queenside, or ...d5 in the center.",
+      mistake: "Leaving the king in the center."
+    }
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+;
+(function (g) {
+  g.OL_ANN = g.OL_ANN || {};
   g.OL_ANN.slav = {
     '@lessons': [
       { title: 'The Slav is your Caro-Kann against 1.d4',
@@ -7241,6 +8556,21 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
       ['caro', 'slav', 'rare'].forEach(function (cid) { sansOf(graphs[cid].nodes[graphs[cid].rootKey], false).forEach(function (s) { allFirst[s] = true; }); });
       check('Black repertoire answers 14 different White first moves across Caro-Kann, Slav and Unusual', Object.keys(allFirst).length >= 14, Object.keys(allFirst).join(' '));
     }
+    if (graphs.sicilian) {
+      var scRoot = graphs.sicilian.nodes[graphs.sicilian.rootKey];
+      check('Sicilian: the book opens 1.e4, the learner answers ...c5, then ...Nc6, ...g6 and ...Nf6 vs the Maroczy', scRoot.turn === 'w' && sansOf(scRoot, false).join() === 'e4' && sansOf(scRoot, true).length === 0 && recOf(nodeAfter('sicilian', 'e4')) === 'c5' && recOf(nodeAfter('sicilian', 'e4 c5 Nf3')) === 'Nc6' && recOf(nodeAfter('sicilian', 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4')) === 'g6' && recOf(nodeAfter('sicilian', 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 c4')) === 'Nf6');
+      var sc2 = sansOf(nodeAfter('sicilian', 'e4 c5'), false);
+      check('Sicilian: every common White 2nd move has a prepared answer', ['Nf3', 'c3', 'Nc3', 'd4', 'f4', 'Bc4', 'b4', 'd3'].every(function (m) { return sc2.indexOf(m) >= 0 && !!recOf(nodeAfter('sicilian', 'e4 c5 ' + m)); }), sc2.join(' '));
+      check('Sicilian: 6.Be2?? is punished by ...Nxd4', recOf(nodeAfter('sicilian', 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2')) === 'Nxd4');
+      var alA = nodeAfter('sicilian', 'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6 cxd4 d6'), smA = nodeAfter('sicilian', 'e4 c5 d4 cxd4 c3 Nf6 e5 Nd5 cxd4 d6 Nf3 Nc6'), nfA = nodeAfter('sicilian', 'e4 c5 Nf3 Nc6 c3 Nf6 e5 Nd5 d4 cxd4 cxd4 d6');
+      check('Sicilian transpositions: Alapin, 2.Nf3 Nc6 3.c3 and the Smith-Morra decline meet in one position', alA && smA && nfA && alA.key === smA.key && alA.key === nfA.key);
+      var n2 = nodeAfter('sicilian', 'e4 c5 Nf3');
+      check('Sicilian: the Najdorf/Dragon (2...d6) and Kan (2...e6) are optional alternatives, never the recommendation', n2 && ['d6', 'e6'].every(function (m) { return n2.edges.some(function (e) { return e.san === m && e.isLearner && !e.rec; }); }));
+      if (graphs.e4others) {
+        var alp = 'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6 cxd4 d6 Bc4 Nb6 Bb5';
+        check('Alapin as Black matches the 1.e4 Others course as White, move for move', !!nodeAfter('sicilian', alp) && !!nodeAfter('e4others', alp));
+      }
+    }
     if (graphs.slav) check('Slav: against the Blackmar-Diemer 2.e4, ...c6 reaches the Caro-Kann position', recOf(nodeAfter('slav', 'd4 d5 e4')) === 'c6' && nodeAfter('slav', 'd4 d5 e4 c6').fen.split(' ').slice(0, 4).join(' ') === nodeAfter('caro', 'e4 c6 d4 d5').fen.split(' ').slice(0, 4).join(' '));
     var sideBad = 0, recBad = 0;
     Object.keys(graphs).forEach(function (cid) {
@@ -7344,7 +8674,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
   var STORE_KEY = 'openingLab.v1';
   var storageOk = true;
   function freshStore() {
-    return { v: 1, settings: { theme: 'dark', coords: true, sound: true, engine: true, arrow: true, style: 'surprise', pmode: 'recall', plen: 10, pstart: 'start', tfilter: 'common', tdepth: 99, course: null }, courses: {} };
+    return { v: 1, settings: { theme: 'dark', coords: true, sound: true, engine: true, arrow: true, style: 'surprise', pmode: 'recall', plen: 10, pstart: 'start', tfilter: 'common', tdepth: 99, course: null, lshow: true }, courses: {} };
   }
   function loadStore() {
     try {
@@ -7363,9 +8693,21 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
     catch (e) { if (storageOk) { storageOk = false; toast('Progress cannot be saved in this browser (storage is blocked or full). Everything else still works.'); } }
   }
   function cprog(cid) {
-    if (!store.courses[cid]) store.courses[cid] = { nodes: {}, lines: {}, mistakes: [], last: null };
+    if (!store.courses[cid]) store.courses[cid] = { nodes: {}, lines: {}, mistakes: [], last: null, learned: {} };
+    if (!store.courses[cid].learned) store.courses[cid].learned = {};
     return store.courses[cid];
   }
+  function markLearned(key) {
+    var p = cprog(S.cid);
+    if (p.learned[key]) return;
+    p.learned[key] = Date.now();
+    save();
+  }
+  function isNewPosition(key) {
+    var p = cprog(S.cid);
+    return !p.nodes[key] && !p.learned[key];
+  }
+  function showMyMove() { return store.settings.lshow && !P.active && APP.tab !== 'practice'; }
   function decisionKeys(cid) {
     var gph = GRAPHS[cid], out = [];
     Object.keys(gph.nodes).forEach(function (k) { if (gph.nodes[k].edges.some(function (e) { return e.isLearner; })) out.push(k); });
@@ -7373,7 +8715,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
   }
   function courseProgress(cid) {
     var p = cprog(cid), keys = decisionKeys(cid), seen = 0, mastered = 0, att = 0, ok1 = 0;
-    keys.forEach(function (k) { var st = p.nodes[k]; if (st) { seen++; att += st.a; ok1 += st.f; if (st.m) mastered++; } });
+    keys.forEach(function (k) { var st = p.nodes[k]; if (st) { seen++; att += st.a; ok1 += st.f; if (st.m) mastered++; } else if (p.learned[k]) seen++; });
     var linesDone = Object.keys(p.lines).length;
     return { total: keys.length, seen: seen, mastered: mastered, firstTry: att ? Math.round(100 * ok1 / att) : null, linesDone: linesDone, lines: GRAPHS[cid].lines.length, last: p.last };
   }
@@ -7498,7 +8840,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
   }
   function engineHidden() {
     if (!store.settings.engine) return true;
-    if (P.active && !P.done && P.awaiting && !P.answered && P.mode !== 'guided') return true;
+    if (P.active && !P.done && P.awaiting && !P.answered && P.mode !== 'guided' && !P.intro) return true;
     return false;
   }
 
@@ -7597,6 +8939,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
     cancelPending();
     S.paused = !!(P.active && P.answered);
     S.note = null;
+    if (edge && S.mode === 'book' && !P.active) markLearned(nodeBefore.key);
     pushMove(mv, edge);
     if (S.mode === 'book') {
       if (edge) S.feedback = { type: edge.rec ? 'rec' : 'alt', edge: edge, node: nodeBefore };
@@ -7859,7 +9202,9 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
 
   function practiceDecisionStart(n) {
     if (P.awaiting && P.key === n.key) return;
-    P.awaiting = true; P.answered = null; P.tries = 0; P.key = n.key; P.revealed = P.mode === 'guided';
+    P.awaiting = true; P.answered = null; P.tries = 0; P.key = n.key;
+    P.intro = isNewPosition(n.key);
+    P.revealed = P.mode === 'guided' || P.intro;
     P.warmup = S.moves.length < course().identity.split(' ').length;
     P.lastWrong = null;
     P.prevOpp = S.moves.length ? S.moves[S.moves.length - 1].edge : null;
@@ -7881,7 +9226,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
     var first = P.tries === 1;
     var path = S.moves.map(function (m) { return m.san; }).join(' ');
     if (P.warmup) {
-      if (edge) { P.awaiting = false; P.lastWrong = null; return true; }
+      if (edge) { if (P.intro) markLearned(node.key); P.awaiting = false; P.lastWrong = null; return true; }
       var t2 = new Chess(g.fen()), w = null;
       try { w = t2.move(promo ? { from: from, to: to, promotion: promo } : { from: from, to: to }); } catch (err) { w = null; }
       if (!w) return false;
@@ -7890,6 +9235,13 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
       if (P.mode === 'challenge' || P.tries >= 2) P.revealed = true;
       render();
       return false;
+    }
+    if (edge && P.intro) {
+      markLearned(node.key);
+      P.results.push({ key: node.key, intro: true, san: edge.san, path: path });
+      P.answered = { edge: edge, intro: true };
+      S.paused = true;
+      return true;
     }
     if (edge) {
       var credit = edge.rec ? 1 : 0.75;
@@ -7910,7 +9262,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
     if (!mv) return false;
     sound('wrong');
     var rec = node.edges.filter(function (e) { return e.rec; })[0];
-    if (first) {
+    if (first && !P.intro) {
       recordDecision(node.key, true, false);
       P.streak = 0;
       var p = cprog(S.cid);
@@ -8234,10 +9586,11 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
       if (lastE && lastE.ann && lastE.ann.arrows) lastE.ann.arrows.forEach(function (a) { out += arrowSvg(a[0], a[1], lastE.isLearner ? '#ffaa00' : '#e8573f', 0.75); });
       if (rec && rec.ann && rec.ann.arrows) rec.ann.arrows.forEach(function (a) { out += arrowSvg(a[0], a[1], '#ffaa00', 0.75); });
     }
-    if (rec && (S.showHint || (P.active && !P.done && P.awaiting && !P.answered && P.revealed))) out += arrowSvg(rec.from, rec.to, '#5fae3a', 0.9);
+    var recShown = rec && (S.showHint || showMyMove() || (P.active && !P.done && P.awaiting && !P.answered && P.revealed));
+    if (recShown) out += arrowSvg(rec.from, rec.to, '#5fae3a', 0.9);
     if (store.settings.arrow && !engineHidden()) {
       var ev = Engine.get(posFen(S.view));
-      if (ev && ev.best && ev.depth >= 8) out += arrowSvg(ev.best.slice(0, 2), ev.best.slice(2, 4), '#4f8fe0', 0.78);
+      if (ev && ev.best && ev.depth >= 8 && !(recShown && ev.best === rec.uci)) out += arrowSvg(ev.best.slice(0, 2), ev.best.slice(2, 4), '#4f8fe0', 0.78);
     }
     S.userArrows.forEach(function (a) { out += arrowSvg(a[0], a[1], '#ffaa00', 0.82); });
     B.svg.innerHTML = out;
@@ -8297,7 +9650,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
   function updateEvalBar() {
     var eb = $('evalbar');
     if (!eb) return;
-    var hidden = engineHidden() || (P.active && P.mode === 'challenge' && P.awaiting && !P.answered);
+    var hidden = engineHidden() || (P.active && P.mode === 'challenge' && P.awaiting && !P.answered && !P.intro);
     var ev = Engine.get(posFen(S.view));
     var fl = flipped();
     eb.classList.toggle('flipped', fl);
@@ -8450,15 +9803,19 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
       return '<div class="coach"><div class="status">Opponent to move</div><p>' + esc(S.note || 'Position loaded.') + '</p><div class="btn-row"><button class="btn small primary" data-act="resume">Let the opponent move</button></div></div>';
     }
     if (S.thinking || !learnerTurnAt(len)) return '<div class="coach"><div class="status"><span class="pulse"></span>Opponent is choosing a book move...</div></div>';
-    return '<div class="coach good"><div class="status"><span class="pulse"></span>Your move (' + (c.side === 'w' ? 'White' : 'Black') + ')</div>' + (S.note ? '<p>' + esc(S.note) + '</p>' : '') + '</div>';
+    var recNow = showMyMove() ? recEdgeAt(curNode()) : null;
+    return '<div class="coach good"><div class="status"><span class="pulse"></span>Your move (' + (c.side === 'w' ? 'White' : 'Black') + ')' + (recNow ? ': play ' + esc(moveLabel(len, recNow.san)) : '') + '</div>' +
+      (recNow ? '<p>Follow the green arrow, or try another move to see what the course says about it.</p>' : '') +
+      (S.note ? '<p>' + esc(S.note) + '</p>' : '') + '</div>';
   }
 
   function learnHtml() {
     var c = course();
     var ctx = lineContext();
-    var html = crumbsHtml(ctx) + lineHeadHtml(ctx) + statusHtml();
     var live = isLive();
     var len = S.moves.length;
+    var firstVisit = !Object.keys(cprog(S.cid).lines).length && !S.forced && !S.moves.some(function (m) { return m.color === c.side; });
+    var html = crumbsHtml(ctx) + lineHeadHtml(ctx) + statusHtml() + (firstVisit ? roadmapHtml(true) : '');
     var A = annFor(S.cid);
     // feedback on the learner's last move
     if (live && S.feedback && (S.feedback.type === 'rec' || S.feedback.type === 'alt' || S.feedback.type === 'transpose')) {
@@ -8488,7 +9845,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
       var rec2 = recEdgeAt(n);
       if (rec2) {
         var ra = rec2.ann || {};
-        var shown = S.showHint;
+        var shown = S.showHint || showMyMove();
         html += '<div class="coach"><h3>Your options</h3>' +
           '<div class="reveal' + (shown ? ' shown' : '') + '" data-act="hint" title="' + (shown ? '' : 'Click to reveal') + '">' +
           '<div class="movechoice">' + learnerEdges.map(function (e) { return moveChip(e, n); }).join('') + '</div>' +
@@ -8512,9 +9869,38 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
       '<button data-act="style" data-v="surprise" aria-pressed="' + (!S.forced) + '">Surprise me</button>' +
       '<button data-act="style" data-v="repeat" aria-pressed="' + (!!S.forced) + '"' + (S.lastLine || ctx ? '' : ' disabled') + '>Repeat same line</button></div>' +
       '<select class="sel" data-act="pick-line" aria-label="Choose a line to practise">' + lineOptions(S.forced) + '</select></div>';
+    html += '<div class="field"><span class="lbl">Your moves</span><div class="seg" role="group" aria-label="Your moves">' +
+      '<button data-act="lshow" data-v="1" aria-pressed="' + !!store.settings.lshow + '">Show my move</button>' +
+      '<button data-act="lshow" data-v="0" aria-pressed="' + !store.settings.lshow + '">Quiz me (hide it)</button></div></div>';
     html += movesAndAnalysisHtml();
+    if (!firstVisit) html += roadmapHtml(false);
     html += lessonsHtml();
     return html;
+  }
+
+  function roadmapHtml(expanded) {
+    var gph = graph(), p = cprog(S.cid);
+    function done(l) { return !!p.lines[l.def.id]; }
+    function ofTier(t) { return gph.lines.filter(function (l) { return l.def.tier === t; }); }
+    var core = ofTier('core'), common = ofTier('common');
+    var coreDone = core.filter(done).length, commonDone = common.filter(done).length;
+    var next = core.filter(function (l) { return !done(l); })[0] || common.filter(function (l) { return !done(l); })[0] || null;
+    function list(ls) {
+      return '<ol class="pathlist">' + ls.map(function (l) {
+        return '<li class="' + (done(l) ? 'done' : '') + '"><button class="linkish" data-act="learn-line" data-id="' + l.def.id + '">' + (done(l) ? '<span class="tick" aria-label="learned">&#10003;</span>' : '') + esc(l.def.name) + '</button></li>';
+      }).join('') + '</ol>';
+    }
+    var body = '<ol class="steps">' +
+      '<li><b>Learn the ' + core.length + ' core lines.</b> Play each one here. The green arrow shows your move and the cards explain why it works.</li>' +
+      '<li><b>Practice.</b> The Practice tab quizzes you, weak spots first. A position you have never seen is shown to you before it is tested.</li>' +
+      '<li><b>Add the common lines</b> once the core ones feel easy.</li></ol>' +
+      '<div class="btn-row">' + (next ? '<button class="btn small primary" data-act="learn-line" data-id="' + next.def.id + '">' + (coreDone || commonDone ? 'Learn next: ' : 'Start with: ') + esc(next.def.name) + '</button>' : '') +
+      (coreDone ? '<button class="btn small" data-act="tab" data-tab="practice">Practice what you learned</button>' : '') + '</div>' +
+      (next ? '' : '<p>Every core and common line is learned. Practice keeps them fresh.</p>') +
+      '<div class="field"><span class="lbl">Core lines: ' + coreDone + '/' + core.length + ' learned</span>' + list(core) + '</div>' +
+      (common.length ? '<details class="sub"><summary>Common lines: ' + commonDone + '/' + common.length + ' learned</summary>' + list(common) + '</details>' : '');
+    if (expanded) return '<div class="coach path"><h3>New here? Your path through this course</h3>' + body + '</div>';
+    return '<details class="box"><summary>Your path: ' + coreDone + '/' + core.length + ' core lines learned</summary><div class="inner">' + body + '</div></details>';
   }
 
   function lineOptions(selected, allLabel) {
@@ -8660,10 +10046,14 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
       var pr = courseProgress(S.cid);
       var p = cprog(S.cid);
       var mist = p.mistakes.slice(0, 6);
+      var fresh = !pr.linesDone && !pr.seen && !Object.keys(p.learned).length;
       return '<div class="line-head"><h2>Practice the ' + esc(c.name) + '</h2></div>' +
+        (fresh ? '<div class="coach path"><h3>First time here? Learn the core lines first</h3><p>Practice quizzes you on moves you already know. Play the core lines once in Learn &amp; Explore (the green arrow shows every move), then come back.</p>' +
+          '<div class="btn-row"><button class="btn small primary" data-act="tab" data-tab="learn">Go to Learn &amp; Explore</button></div>' +
+          '<p class="muted">Or start now: every position you have never seen is shown to you first, and tested the next time it comes up.</p></div>' : '') +
         '<div class="field"><span class="lbl">Mode</span><div class="seg" role="group" aria-label="Practice mode">' + ['guided', 'recall', 'challenge'].map(function (m) {
           return '<button data-act="pmode" data-v="' + m + '" aria-pressed="' + (store.settings.pmode === m) + '">' + m.charAt(0).toUpperCase() + m.slice(1) + '</button>';
-        }).join('') + '</div><span class="muted">' + MODE_DESC[store.settings.pmode] + '</span></div>' +
+        }).join('') + '</div><span class="muted">' + MODE_DESC[store.settings.pmode] + ' In every mode, a position you have never seen is shown to you first and tested the next time.</span></div>' +
         startFromHtml(false) +
         '<div class="field"><span class="lbl">Session length</span><div class="seg" role="group" aria-label="Session length">' + [5, 10, 15].map(function (n) {
           return '<button data-act="plen" data-v="' + n + '" aria-pressed="' + (store.settings.plen === n) + '">' + n + ' decisions</button>';
@@ -8680,19 +10070,20 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
         movesAndAnalysisHtml();
     }
     if (P.done) {
-      var credit = 0, firsts = 0;
-      P.results.forEach(function (r) { credit += r.credit; if (r.first && r.credit > 0) firsts++; });
-      var pct = Math.round(100 * credit / Math.max(1, P.results.length));
+      var credit = 0, firsts = 0, tested = P.results.filter(function (r) { return !r.intro; }), learnedNew = P.results.length - tested.length;
+      tested.forEach(function (r) { credit += r.credit; if (r.first && r.credit > 0) firsts++; });
+      var pct = tested.length ? Math.round(100 * credit / tested.length) + '%' : '--';
       return '<div class="line-head"><h2>Session complete</h2></div>' +
-        '<div class="score-row"><div class="box"><b>' + pct + '%</b><span>Score</span></div><div class="box"><b>' + firsts + '/' + P.results.length + '</b><span>First try</span></div><div class="box"><b>' + P.best + '</b><span>Best streak</span></div><div class="box"><b>' + (P.linesPlayed || 0) + '</b><span>Lines finished</span></div></div>' +
+        '<div class="score-row"><div class="box"><b>' + pct + '</b><span>Score</span></div><div class="box"><b>' + firsts + '/' + tested.length + '</b><span>First try</span></div><div class="box"><b>' + learnedNew + '</b><span>New moves learned</span></div><div class="box"><b>' + (P.linesPlayed || 0) + '</b><span>Lines finished</span></div></div>' +
+        (learnedNew && !tested.length ? '<div class="coach good"><p>Every position in this session was new to you, so nothing was scored yet. Practice again: this time you find the moves yourself.</p></div>' : '') +
         dotsHtml() +
-        (P.mistakes.length ? '<div class="field"><span class="lbl">Review your mistakes</span><div class="movechoice">' + P.mistakes.map(function (m) { return '<button class="movechip" data-act="loadpath" data-path="' + esc(m.path) + '">You: ' + esc(m.played) + ' <small>course: ' + esc(m.expected) + '</small></button>'; }).join('') + '</div></div>' : '<div class="coach good"><p>No mistakes in this session. Try Challenge mode next.</p></div>') +
+        (!tested.length ? '' : P.mistakes.length ? '<div class="field"><span class="lbl">Review your mistakes</span><div class="movechoice">' + P.mistakes.map(function (m) { return '<button class="movechip" data-act="loadpath" data-path="' + esc(m.path) + '">You: ' + esc(m.played) + ' <small>course: ' + esc(m.expected) + '</small></button>'; }).join('') + '</div></div>' : '<div class="coach good"><p>No mistakes in this session. Try Challenge mode next.</p></div>') +
         '<div class="btn-row"><button class="btn primary" data-act="pstart">Practice again</button><button class="btn" data-act="pstop">Back to setup</button></div>' + movesAndAnalysisHtml();
     }
-    var res = P.results, credit2 = 0, f2 = 0;
+    var res = P.results.filter(function (r) { return !r.intro; }), credit2 = 0, f2 = 0;
     res.forEach(function (r) { credit2 += r.credit; if (r.first && r.credit > 0) f2++; });
     var html = '<div class="line-head" style="justify-content:space-between"><div class="line-head"><h2>' + esc(P.mode.charAt(0).toUpperCase() + P.mode.slice(1)) + ' practice</h2><span class="chip">' + esc(P.scope === 'all' ? 'All branches' : 'Focus: ' + P.scope) + '</span></div><button class="btn small" data-act="pstop">' + ICON.restart + 'Change settings</button></div>' +
-      '<div class="score-row"><div class="box"><b>' + Math.min(P.len, res.length + (P.answered ? 0 : 1)) + '/' + P.len + '</b><span>Decision</span></div><div class="box"><b>' + (res.length ? Math.round(100 * credit2 / res.length) + '%' : '--') + '</b><span>Score</span></div><div class="box"><b>' + (res.length ? Math.round(100 * f2 / res.length) + '%' : '--') + '</b><span>First try</span></div><div class="box"><b>' + P.streak + '</b><span>Streak</span></div></div>' + dotsHtml();
+      '<div class="score-row"><div class="box"><b>' + Math.min(P.len, P.results.length + (P.answered ? 0 : 1)) + '/' + P.len + '</b><span>Decision</span></div><div class="box"><b>' + (res.length ? Math.round(100 * credit2 / res.length) + '%' : '--') + '</b><span>Score</span></div><div class="box"><b>' + (res.length ? Math.round(100 * f2 / res.length) + '%' : '--') + '</b><span>First try</span></div><div class="box"><b>' + P.streak + '</b><span>Streak</span></div></div>' + dotsHtml();
     var len = S.moves.length;
     var n = curNode();
     if (P.answered) {
@@ -8700,8 +10091,9 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
       var opp = S.moves.length >= 2 ? S.moves[S.moves.length - 2].edge : null;
       var oa = opp && !opp.isLearner && opp.ann ? opp.ann : {};
       var node = graph().nodes[e.fromKey];
-      var title = P.answered.credit === 1 ? 'Correct: ' : P.answered.credit > 0 ? 'Playable alternative (partial credit): ' : 'Played after a hint: ';
-      html += '<div class="coach ' + (P.answered.credit === 1 ? 'good' : 'alt') + '"><h3>' + esc(title + moveLabel(plyOf(node), e.san)) + '</h3>' +
+      var title = P.answered.intro ? 'New move learned: ' : P.answered.credit === 1 ? 'Correct: ' : P.answered.credit > 0 ? 'Playable alternative (partial credit): ' : 'Played after a hint: ';
+      html += '<div class="coach ' + (P.answered.intro || P.answered.credit === 1 ? 'good' : 'alt') + '"><h3>' + esc(title + moveLabel(plyOf(node), e.san)) + '</h3>' +
+        (P.answered.intro ? '<p>Not scored. The next time this position comes up, you find the move yourself.</p>' : '') +
         (e.rec ? '' : '<p>The course recommends ' + esc(moveLabel(plyOf(node), recEdgeAt(node).san)) + ' here.</p>') +
         kv([['Why this works', a.idea || (recEdgeAt(node).ann || {}).idea], ['What ' + (c.side === 'w' ? 'Black' : 'White') + ' threatens', oa.threat], ['Typical mistake', a.mistake || a.watch || oa.avoid]]) +
         (S.mode === 'done' && S.completed ? '<p><b>Line complete: ' + esc((lineById(S.completed.id) || {}).name || '') + '.</b> Continue loads the next variation.</p>' : '') +
@@ -8712,11 +10104,12 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
       var rec = recEdgeAt(n);
       var last = S.moves[len - 1];
       var la = last && last.edge && last.edge.ann ? last.edge.ann : {};
-      html += '<div class="coach"><div class="status"><span class="pulse"></span>' + (last ? 'After ' + esc(moveLabel(len - 1, last.san)) + ', what do you play?' : 'Your move: start the opening') + '</div>' +
-        (P.warmup ? '<p class="muted">Warm-up: play the opening moves to reach the position yourself. Checked, but not scored.</p>' : '') +
+      html += '<div class="coach' + (P.intro ? ' path' : '') + '"><div class="status"><span class="pulse"></span>' + (P.intro ? '<span class="chip new">New</span>' : '') + (last ? 'After ' + esc(moveLabel(len - 1, last.san)) + ', what do you play?' : 'Your move: start the opening') + '</div>' +
+        (P.intro ? '<p>You have not seen this position yet, so here is the move to learn. Play it on the board (follow the green arrow).</p>' : '') +
+        (P.warmup && !P.intro ? '<p class="muted">Warm-up: play the opening moves to reach the position yourself. Checked, but not scored.</p>' : '') +
         (P.mode !== 'challenge' && la.what ? '<p>' + esc(la.what) + '</p>' : '') +
         (P.lastWrong ? '<p style="color:var(--orange)"><b>' + esc(P.lastWrong) + '</b> is legal, but it is not this course\'s move here.' + (P.revealed ? '' : ' Try again.') + '</p>' : '') +
-        (P.revealed && rec ? '<div class="movechoice">' + moveChip(rec, n, 'Recommended') + '</div>' + kv([['Why', (rec.ann || {}).idea]]) : '') +
+        (P.revealed && rec ? '<div class="movechoice">' + moveChip(rec, n, 'Recommended') + '</div>' + kv([['Why', (rec.ann || {}).idea], ['Watch out', P.intro ? (rec.ann || {}).watch : '']]) : '') +
         '<div class="btn-row">' + (P.mode === 'recall' && P.tries > 0 && !P.revealed ? '<button class="btn small" data-act="phint">' + ICON.hint + 'Hint</button>' : '') + '</div></div>';
     } else {
       html += '<div class="coach"><div class="status"><span class="pulse"></span>Opponent is choosing a book move...</div></div>';
@@ -8738,8 +10131,8 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
     var html = '<div class="dots" aria-label="Session results">';
     for (var i = 0; i < P.len; i++) {
       var r = P.results[i];
-      var cls = r ? (r.credit === 1 ? 'ok' : r.credit > 0 ? 'part' : 'bad') : (i === P.results.length && !P.done ? 'now' : '');
-      html += '<i class="' + cls + '">' + (r ? (r.credit === 1 ? '' : r.credit > 0 ? '~' : 'x') : '') + '</i>';
+      var cls = r ? (r.intro ? 'new' : r.credit === 1 ? 'ok' : r.credit > 0 ? 'part' : 'bad') : (i === P.results.length && !P.done ? 'now' : '');
+      html += '<i class="' + cls + '"' + (r && r.intro ? ' title="New move learned (not scored)"' : '') + '>' + (r ? (r.intro ? '+' : r.credit === 1 ? '' : r.credit > 0 ? '~' : 'x') : '') + '</i>';
     }
     return html + '</div>';
   }
@@ -8997,10 +10390,13 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
     'e4 e5 Nc3 Nf6 f4 d5'.split(' ').forEach(function (m) { hg.move(m); });
     heroFen = hg.fen();
     app.innerHTML = '<div class="home">' +
-      '<section class="hero"><div><h1>Learn openings by playing them.</h1><p>Opening Lab drills a complete beginner-friendly repertoire (1.e4 as White; the Caro-Kann, the Slav and one simple setup against everything else as Black) against an opponent that only plays real book moves. A branching tree shows every reply, each decision explains the idea, and Stockfish in your browser shows who is winning after every move.</p>' +
-      '<div class="btn-row"><button class="btn primary" data-act="open-course" data-cid="' + (store.settings.course || 'vienna') + '">' + (store.settings.course ? 'Continue: ' + esc(courseById(store.settings.course).name) : 'Start with the Vienna') + '</button>' +
+      '<section class="hero"><div><h1>Learn openings by playing them.</h1><p>Opening Lab drills a complete beginner-friendly repertoire (1.e4 as White; the Caro-Kann or the Sicilian, the Slav and one simple setup against everything else as Black) against an opponent that only plays real book moves. A branching tree shows every reply, each decision explains the idea, and Stockfish in your browser shows who is winning after every move.</p>' +
+      '<div class="btn-row"><button class="btn primary" data-act="open-course" data-cid="' + (store.settings.course || 'vienna') + '">' + (store.settings.course ? 'Continue: ' + esc(courseById(store.settings.course).name) : 'Start here: the Vienna Game') + '</button>' +
       '<button class="selftest-badge" data-act="selftest" title="Open the self-test report">' + (ok ? '<span class="ok">&#10003;</span>' : '<span class="bad">!</span>') + ' ' + DIAG.linesOk + '/' + DIAG.lines + ' lines validated; ' + DIAG.illegalEdges + ' illegal edges; ' + DIAG.unreachable + ' unreachable lessons</button></div></div>' +
       '<div class="hero-board">' + staticBoard(heroFen, false) + '</div></section>' +
+      '<section class="how" aria-label="How it works"><div><b>1</b><h3>Pick a course</h3><p>One for White, one for Black against 1.e4, then the others when you meet them.</p></div>' +
+      '<div><b>2</b><h3>Learn the core lines</h3><p>In Learn &amp; Explore the green arrow shows your move and a card explains why. Your path lists which line to learn next.</p></div>' +
+      '<div><b>3</b><h3>Practice</h3><p>The Practice tab quizzes you, weak spots first. New positions are shown to you before they are tested.</p></div></section>' +
       '<h2 class="section-title">Choose a course</h2><p class="section-sub">Built for roughly 500-900 rapid players who want to understand the replies they actually meet, not memorise 30 moves of grandmaster theory.</p>' +
       '<div class="cards">' + cards + '</div>' +
       coverageHtml() +
@@ -9170,6 +10566,16 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
         n.edges.forEach(function (x) { if (x.uci === uci) e = x; });
         if (S.mode === 'oob') { var bi = lastBookIndex(); truncateTo(bi); S.mode = 'book'; n = curNode(); n.edges.forEach(function (x) { if (x.uci === uci) e = x; }); }
         if (e) onUserMove(e.from, e.to, e.promotion);
+        break;
+      }
+      case 'lshow': store.settings.lshow = el.getAttribute('data-v') === '1'; save(); render(); break;
+      case 'learn-line': {
+        var lid = el.getAttribute('data-id');
+        if (P.active) stopPracticeSilently();
+        S.forced = lid; S.forcedNoted = false;
+        if (APP.tab !== 'learn') { APP.tab = 'learn'; setTab('learn'); }
+        restart();
+        toast('Learning ' + lineById(lid).name + '. The opponent follows this line.');
         break;
       }
       case 'pmode': store.settings.pmode = el.getAttribute('data-v'); save(); render(); break;

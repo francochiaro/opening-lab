@@ -110,6 +110,21 @@
       ['caro', 'slav', 'rare'].forEach(function (cid) { sansOf(graphs[cid].nodes[graphs[cid].rootKey], false).forEach(function (s) { allFirst[s] = true; }); });
       check('Black repertoire answers 14 different White first moves across Caro-Kann, Slav and Unusual', Object.keys(allFirst).length >= 14, Object.keys(allFirst).join(' '));
     }
+    if (graphs.sicilian) {
+      var scRoot = graphs.sicilian.nodes[graphs.sicilian.rootKey];
+      check('Sicilian: the book opens 1.e4, the learner answers ...c5, then ...Nc6, ...g6 and ...Nf6 vs the Maroczy', scRoot.turn === 'w' && sansOf(scRoot, false).join() === 'e4' && sansOf(scRoot, true).length === 0 && recOf(nodeAfter('sicilian', 'e4')) === 'c5' && recOf(nodeAfter('sicilian', 'e4 c5 Nf3')) === 'Nc6' && recOf(nodeAfter('sicilian', 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4')) === 'g6' && recOf(nodeAfter('sicilian', 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 c4')) === 'Nf6');
+      var sc2 = sansOf(nodeAfter('sicilian', 'e4 c5'), false);
+      check('Sicilian: every common White 2nd move has a prepared answer', ['Nf3', 'c3', 'Nc3', 'd4', 'f4', 'Bc4', 'b4', 'd3'].every(function (m) { return sc2.indexOf(m) >= 0 && !!recOf(nodeAfter('sicilian', 'e4 c5 ' + m)); }), sc2.join(' '));
+      check('Sicilian: 6.Be2?? is punished by ...Nxd4', recOf(nodeAfter('sicilian', 'e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 g6 Nc3 Bg7 Be2')) === 'Nxd4');
+      var alA = nodeAfter('sicilian', 'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6 cxd4 d6'), smA = nodeAfter('sicilian', 'e4 c5 d4 cxd4 c3 Nf6 e5 Nd5 cxd4 d6 Nf3 Nc6'), nfA = nodeAfter('sicilian', 'e4 c5 Nf3 Nc6 c3 Nf6 e5 Nd5 d4 cxd4 cxd4 d6');
+      check('Sicilian transpositions: Alapin, 2.Nf3 Nc6 3.c3 and the Smith-Morra decline meet in one position', alA && smA && nfA && alA.key === smA.key && alA.key === nfA.key);
+      var n2 = nodeAfter('sicilian', 'e4 c5 Nf3');
+      check('Sicilian: the Najdorf/Dragon (2...d6) and Kan (2...e6) are optional alternatives, never the recommendation', n2 && ['d6', 'e6'].every(function (m) { return n2.edges.some(function (e) { return e.san === m && e.isLearner && !e.rec; }); }));
+      if (graphs.e4others) {
+        var alp = 'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6 cxd4 d6 Bc4 Nb6 Bb5';
+        check('Alapin as Black matches the 1.e4 Others course as White, move for move', !!nodeAfter('sicilian', alp) && !!nodeAfter('e4others', alp));
+      }
+    }
     if (graphs.slav) check('Slav: against the Blackmar-Diemer 2.e4, ...c6 reaches the Caro-Kann position', recOf(nodeAfter('slav', 'd4 d5 e4')) === 'c6' && nodeAfter('slav', 'd4 d5 e4 c6').fen.split(' ').slice(0, 4).join(' ') === nodeAfter('caro', 'e4 c6 d4 d5').fen.split(' ').slice(0, 4).join(' '));
     var sideBad = 0, recBad = 0;
     Object.keys(graphs).forEach(function (cid) {

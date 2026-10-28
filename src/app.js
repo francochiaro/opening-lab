@@ -82,7 +82,7 @@
   var STORE_KEY = 'openingLab.v1';
   var storageOk = true;
   function freshStore() {
-    return { v: 1, settings: { theme: 'dark', coords: true, sound: true, engine: true, arrow: true, style: 'surprise', pmode: 'recall', plen: 10, pstart: 'start', tfilter: 'common', tdepth: 99, course: null }, courses: {} };
+    return { v: 1, settings: { theme: 'dark', coords: true, sound: true, engine: true, arrow: true, style: 'surprise', pmode: 'recall', plen: 10, pstart: 'start', tfilter: 'common', tdepth: 99, course: null, lshow: true }, courses: {} };
   }
   function loadStore() {
     try {
@@ -101,9 +101,21 @@
     catch (e) { if (storageOk) { storageOk = false; toast('Progress cannot be saved in this browser (storage is blocked or full). Everything else still works.'); } }
   }
   function cprog(cid) {
-    if (!store.courses[cid]) store.courses[cid] = { nodes: {}, lines: {}, mistakes: [], last: null };
+    if (!store.courses[cid]) store.courses[cid] = { nodes: {}, lines: {}, mistakes: [], last: null, learned: {} };
+    if (!store.courses[cid].learned) store.courses[cid].learned = {};
     return store.courses[cid];
   }
+  function markLearned(key) {
+    var p = cprog(S.cid);
+    if (p.learned[key]) return;
+    p.learned[key] = Date.now();
+    save();
+  }
+  function isNewPosition(key) {
+    var p = cprog(S.cid);
+    return !p.nodes[key] && !p.learned[key];
+  }
+  function showMyMove() { return store.settings.lshow && !P.active && APP.tab !== 'practice'; }
   function decisionKeys(cid) {
     var gph = GRAPHS[cid], out = [];
     Object.keys(gph.nodes).forEach(function (k) { if (gph.nodes[k].edges.some(function (e) { return e.isLearner; })) out.push(k); });
@@ -111,7 +123,7 @@
   }
   function courseProgress(cid) {
     var p = cprog(cid), keys = decisionKeys(cid), seen = 0, mastered = 0, att = 0, ok1 = 0;
-    keys.forEach(function (k) { var st = p.nodes[k]; if (st) { seen++; att += st.a; ok1 += st.f; if (st.m) mastered++; } });
+    keys.forEach(function (k) { var st = p.nodes[k]; if (st) { seen++; att += st.a; ok1 += st.f; if (st.m) mastered++; } else if (p.learned[k]) seen++; });
     var linesDone = Object.keys(p.lines).length;
     return { total: keys.length, seen: seen, mastered: mastered, firstTry: att ? Math.round(100 * ok1 / att) : null, linesDone: linesDone, lines: GRAPHS[cid].lines.length, last: p.last };
   }
@@ -236,7 +248,7 @@
   }
   function engineHidden() {
     if (!store.settings.engine) return true;
-    if (P.active && !P.done && P.awaiting && !P.answered && P.mode !== 'guided') return true;
+    if (P.active && !P.done && P.awaiting && !P.answered && P.mode !== 'guided' && !P.intro) return true;
     return false;
   }
 
@@ -335,6 +347,7 @@
     cancelPending();
     S.paused = !!(P.active && P.answered);
     S.note = null;
+    if (edge && S.mode === 'book' && !P.active) markLearned(nodeBefore.key);
     pushMove(mv, edge);
     if (S.mode === 'book') {
       if (edge) S.feedback = { type: edge.rec ? 'rec' : 'alt', edge: edge, node: nodeBefore };
@@ -597,7 +610,9 @@
 
   function practiceDecisionStart(n) {
     if (P.awaiting && P.key === n.key) return;
-    P.awaiting = true; P.answered = null; P.tries = 0; P.key = n.key; P.revealed = P.mode === 'guided';
+    P.awaiting = true; P.answered = null; P.tries = 0; P.key = n.key;
+    P.intro = isNewPosition(n.key);
+    P.revealed = P.mode === 'guided' || P.intro;
     P.warmup = S.moves.length < course().identity.split(' ').length;
     P.lastWrong = null;
     P.prevOpp = S.moves.length ? S.moves[S.moves.length - 1].edge : null;
@@ -619,7 +634,7 @@
     var first = P.tries === 1;
     var path = S.moves.map(function (m) { return m.san; }).join(' ');
     if (P.warmup) {
-      if (edge) { P.awaiting = false; P.lastWrong = null; return true; }
+      if (edge) { if (P.intro) markLearned(node.key); P.awaiting = false; P.lastWrong = null; return true; }
       var t2 = new Chess(g.fen()), w = null;
       try { w = t2.move(promo ? { from: from, to: to, promotion: promo } : { from: from, to: to }); } catch (err) { w = null; }
       if (!w) return false;
@@ -628,6 +643,13 @@
       if (P.mode === 'challenge' || P.tries >= 2) P.revealed = true;
       render();
       return false;
+    }
+    if (edge && P.intro) {
+      markLearned(node.key);
+      P.results.push({ key: node.key, intro: true, san: edge.san, path: path });
+      P.answered = { edge: edge, intro: true };
+      S.paused = true;
+      return true;
     }
     if (edge) {
       var credit = edge.rec ? 1 : 0.75;
@@ -648,7 +670,7 @@
     if (!mv) return false;
     sound('wrong');
     var rec = node.edges.filter(function (e) { return e.rec; })[0];
-    if (first) {
+    if (first && !P.intro) {
       recordDecision(node.key, true, false);
       P.streak = 0;
       var p = cprog(S.cid);
@@ -972,10 +994,11 @@
       if (lastE && lastE.ann && lastE.ann.arrows) lastE.ann.arrows.forEach(function (a) { out += arrowSvg(a[0], a[1], lastE.isLearner ? '#ffaa00' : '#e8573f', 0.75); });
       if (rec && rec.ann && rec.ann.arrows) rec.ann.arrows.forEach(function (a) { out += arrowSvg(a[0], a[1], '#ffaa00', 0.75); });
     }
-    if (rec && (S.showHint || (P.active && !P.done && P.awaiting && !P.answered && P.revealed))) out += arrowSvg(rec.from, rec.to, '#5fae3a', 0.9);
+    var recShown = rec && (S.showHint || showMyMove() || (P.active && !P.done && P.awaiting && !P.answered && P.revealed));
+    if (recShown) out += arrowSvg(rec.from, rec.to, '#5fae3a', 0.9);
     if (store.settings.arrow && !engineHidden()) {
       var ev = Engine.get(posFen(S.view));
-      if (ev && ev.best && ev.depth >= 8) out += arrowSvg(ev.best.slice(0, 2), ev.best.slice(2, 4), '#4f8fe0', 0.78);
+      if (ev && ev.best && ev.depth >= 8 && !(recShown && ev.best === rec.uci)) out += arrowSvg(ev.best.slice(0, 2), ev.best.slice(2, 4), '#4f8fe0', 0.78);
     }
     S.userArrows.forEach(function (a) { out += arrowSvg(a[0], a[1], '#ffaa00', 0.82); });
     B.svg.innerHTML = out;
@@ -1035,7 +1058,7 @@
   function updateEvalBar() {
     var eb = $('evalbar');
     if (!eb) return;
-    var hidden = engineHidden() || (P.active && P.mode === 'challenge' && P.awaiting && !P.answered);
+    var hidden = engineHidden() || (P.active && P.mode === 'challenge' && P.awaiting && !P.answered && !P.intro);
     var ev = Engine.get(posFen(S.view));
     var fl = flipped();
     eb.classList.toggle('flipped', fl);
@@ -1188,15 +1211,19 @@
       return '<div class="coach"><div class="status">Opponent to move</div><p>' + esc(S.note || 'Position loaded.') + '</p><div class="btn-row"><button class="btn small primary" data-act="resume">Let the opponent move</button></div></div>';
     }
     if (S.thinking || !learnerTurnAt(len)) return '<div class="coach"><div class="status"><span class="pulse"></span>Opponent is choosing a book move...</div></div>';
-    return '<div class="coach good"><div class="status"><span class="pulse"></span>Your move (' + (c.side === 'w' ? 'White' : 'Black') + ')</div>' + (S.note ? '<p>' + esc(S.note) + '</p>' : '') + '</div>';
+    var recNow = showMyMove() ? recEdgeAt(curNode()) : null;
+    return '<div class="coach good"><div class="status"><span class="pulse"></span>Your move (' + (c.side === 'w' ? 'White' : 'Black') + ')' + (recNow ? ': play ' + esc(moveLabel(len, recNow.san)) : '') + '</div>' +
+      (recNow ? '<p>Follow the green arrow, or try another move to see what the course says about it.</p>' : '') +
+      (S.note ? '<p>' + esc(S.note) + '</p>' : '') + '</div>';
   }
 
   function learnHtml() {
     var c = course();
     var ctx = lineContext();
-    var html = crumbsHtml(ctx) + lineHeadHtml(ctx) + statusHtml();
     var live = isLive();
     var len = S.moves.length;
+    var firstVisit = !Object.keys(cprog(S.cid).lines).length && !S.forced && !S.moves.some(function (m) { return m.color === c.side; });
+    var html = crumbsHtml(ctx) + lineHeadHtml(ctx) + statusHtml() + (firstVisit ? roadmapHtml(true) : '');
     var A = annFor(S.cid);
     // feedback on the learner's last move
     if (live && S.feedback && (S.feedback.type === 'rec' || S.feedback.type === 'alt' || S.feedback.type === 'transpose')) {
@@ -1226,7 +1253,7 @@
       var rec2 = recEdgeAt(n);
       if (rec2) {
         var ra = rec2.ann || {};
-        var shown = S.showHint;
+        var shown = S.showHint || showMyMove();
         html += '<div class="coach"><h3>Your options</h3>' +
           '<div class="reveal' + (shown ? ' shown' : '') + '" data-act="hint" title="' + (shown ? '' : 'Click to reveal') + '">' +
           '<div class="movechoice">' + learnerEdges.map(function (e) { return moveChip(e, n); }).join('') + '</div>' +
@@ -1250,9 +1277,38 @@
       '<button data-act="style" data-v="surprise" aria-pressed="' + (!S.forced) + '">Surprise me</button>' +
       '<button data-act="style" data-v="repeat" aria-pressed="' + (!!S.forced) + '"' + (S.lastLine || ctx ? '' : ' disabled') + '>Repeat same line</button></div>' +
       '<select class="sel" data-act="pick-line" aria-label="Choose a line to practise">' + lineOptions(S.forced) + '</select></div>';
+    html += '<div class="field"><span class="lbl">Your moves</span><div class="seg" role="group" aria-label="Your moves">' +
+      '<button data-act="lshow" data-v="1" aria-pressed="' + !!store.settings.lshow + '">Show my move</button>' +
+      '<button data-act="lshow" data-v="0" aria-pressed="' + !store.settings.lshow + '">Quiz me (hide it)</button></div></div>';
     html += movesAndAnalysisHtml();
+    if (!firstVisit) html += roadmapHtml(false);
     html += lessonsHtml();
     return html;
+  }
+
+  function roadmapHtml(expanded) {
+    var gph = graph(), p = cprog(S.cid);
+    function done(l) { return !!p.lines[l.def.id]; }
+    function ofTier(t) { return gph.lines.filter(function (l) { return l.def.tier === t; }); }
+    var core = ofTier('core'), common = ofTier('common');
+    var coreDone = core.filter(done).length, commonDone = common.filter(done).length;
+    var next = core.filter(function (l) { return !done(l); })[0] || common.filter(function (l) { return !done(l); })[0] || null;
+    function list(ls) {
+      return '<ol class="pathlist">' + ls.map(function (l) {
+        return '<li class="' + (done(l) ? 'done' : '') + '"><button class="linkish" data-act="learn-line" data-id="' + l.def.id + '">' + (done(l) ? '<span class="tick" aria-label="learned">&#10003;</span>' : '') + esc(l.def.name) + '</button></li>';
+      }).join('') + '</ol>';
+    }
+    var body = '<ol class="steps">' +
+      '<li><b>Learn the ' + core.length + ' core lines.</b> Play each one here. The green arrow shows your move and the cards explain why it works.</li>' +
+      '<li><b>Practice.</b> The Practice tab quizzes you, weak spots first. A position you have never seen is shown to you before it is tested.</li>' +
+      '<li><b>Add the common lines</b> once the core ones feel easy.</li></ol>' +
+      '<div class="btn-row">' + (next ? '<button class="btn small primary" data-act="learn-line" data-id="' + next.def.id + '">' + (coreDone || commonDone ? 'Learn next: ' : 'Start with: ') + esc(next.def.name) + '</button>' : '') +
+      (coreDone ? '<button class="btn small" data-act="tab" data-tab="practice">Practice what you learned</button>' : '') + '</div>' +
+      (next ? '' : '<p>Every core and common line is learned. Practice keeps them fresh.</p>') +
+      '<div class="field"><span class="lbl">Core lines: ' + coreDone + '/' + core.length + ' learned</span>' + list(core) + '</div>' +
+      (common.length ? '<details class="sub"><summary>Common lines: ' + commonDone + '/' + common.length + ' learned</summary>' + list(common) + '</details>' : '');
+    if (expanded) return '<div class="coach path"><h3>New here? Your path through this course</h3>' + body + '</div>';
+    return '<details class="box"><summary>Your path: ' + coreDone + '/' + core.length + ' core lines learned</summary><div class="inner">' + body + '</div></details>';
   }
 
   function lineOptions(selected, allLabel) {
@@ -1398,10 +1454,14 @@
       var pr = courseProgress(S.cid);
       var p = cprog(S.cid);
       var mist = p.mistakes.slice(0, 6);
+      var fresh = !pr.linesDone && !pr.seen && !Object.keys(p.learned).length;
       return '<div class="line-head"><h2>Practice the ' + esc(c.name) + '</h2></div>' +
+        (fresh ? '<div class="coach path"><h3>First time here? Learn the core lines first</h3><p>Practice quizzes you on moves you already know. Play the core lines once in Learn &amp; Explore (the green arrow shows every move), then come back.</p>' +
+          '<div class="btn-row"><button class="btn small primary" data-act="tab" data-tab="learn">Go to Learn &amp; Explore</button></div>' +
+          '<p class="muted">Or start now: every position you have never seen is shown to you first, and tested the next time it comes up.</p></div>' : '') +
         '<div class="field"><span class="lbl">Mode</span><div class="seg" role="group" aria-label="Practice mode">' + ['guided', 'recall', 'challenge'].map(function (m) {
           return '<button data-act="pmode" data-v="' + m + '" aria-pressed="' + (store.settings.pmode === m) + '">' + m.charAt(0).toUpperCase() + m.slice(1) + '</button>';
-        }).join('') + '</div><span class="muted">' + MODE_DESC[store.settings.pmode] + '</span></div>' +
+        }).join('') + '</div><span class="muted">' + MODE_DESC[store.settings.pmode] + ' In every mode, a position you have never seen is shown to you first and tested the next time.</span></div>' +
         startFromHtml(false) +
         '<div class="field"><span class="lbl">Session length</span><div class="seg" role="group" aria-label="Session length">' + [5, 10, 15].map(function (n) {
           return '<button data-act="plen" data-v="' + n + '" aria-pressed="' + (store.settings.plen === n) + '">' + n + ' decisions</button>';
@@ -1418,19 +1478,20 @@
         movesAndAnalysisHtml();
     }
     if (P.done) {
-      var credit = 0, firsts = 0;
-      P.results.forEach(function (r) { credit += r.credit; if (r.first && r.credit > 0) firsts++; });
-      var pct = Math.round(100 * credit / Math.max(1, P.results.length));
+      var credit = 0, firsts = 0, tested = P.results.filter(function (r) { return !r.intro; }), learnedNew = P.results.length - tested.length;
+      tested.forEach(function (r) { credit += r.credit; if (r.first && r.credit > 0) firsts++; });
+      var pct = tested.length ? Math.round(100 * credit / tested.length) + '%' : '--';
       return '<div class="line-head"><h2>Session complete</h2></div>' +
-        '<div class="score-row"><div class="box"><b>' + pct + '%</b><span>Score</span></div><div class="box"><b>' + firsts + '/' + P.results.length + '</b><span>First try</span></div><div class="box"><b>' + P.best + '</b><span>Best streak</span></div><div class="box"><b>' + (P.linesPlayed || 0) + '</b><span>Lines finished</span></div></div>' +
+        '<div class="score-row"><div class="box"><b>' + pct + '</b><span>Score</span></div><div class="box"><b>' + firsts + '/' + tested.length + '</b><span>First try</span></div><div class="box"><b>' + learnedNew + '</b><span>New moves learned</span></div><div class="box"><b>' + (P.linesPlayed || 0) + '</b><span>Lines finished</span></div></div>' +
+        (learnedNew && !tested.length ? '<div class="coach good"><p>Every position in this session was new to you, so nothing was scored yet. Practice again: this time you find the moves yourself.</p></div>' : '') +
         dotsHtml() +
-        (P.mistakes.length ? '<div class="field"><span class="lbl">Review your mistakes</span><div class="movechoice">' + P.mistakes.map(function (m) { return '<button class="movechip" data-act="loadpath" data-path="' + esc(m.path) + '">You: ' + esc(m.played) + ' <small>course: ' + esc(m.expected) + '</small></button>'; }).join('') + '</div></div>' : '<div class="coach good"><p>No mistakes in this session. Try Challenge mode next.</p></div>') +
+        (!tested.length ? '' : P.mistakes.length ? '<div class="field"><span class="lbl">Review your mistakes</span><div class="movechoice">' + P.mistakes.map(function (m) { return '<button class="movechip" data-act="loadpath" data-path="' + esc(m.path) + '">You: ' + esc(m.played) + ' <small>course: ' + esc(m.expected) + '</small></button>'; }).join('') + '</div></div>' : '<div class="coach good"><p>No mistakes in this session. Try Challenge mode next.</p></div>') +
         '<div class="btn-row"><button class="btn primary" data-act="pstart">Practice again</button><button class="btn" data-act="pstop">Back to setup</button></div>' + movesAndAnalysisHtml();
     }
-    var res = P.results, credit2 = 0, f2 = 0;
+    var res = P.results.filter(function (r) { return !r.intro; }), credit2 = 0, f2 = 0;
     res.forEach(function (r) { credit2 += r.credit; if (r.first && r.credit > 0) f2++; });
     var html = '<div class="line-head" style="justify-content:space-between"><div class="line-head"><h2>' + esc(P.mode.charAt(0).toUpperCase() + P.mode.slice(1)) + ' practice</h2><span class="chip">' + esc(P.scope === 'all' ? 'All branches' : 'Focus: ' + P.scope) + '</span></div><button class="btn small" data-act="pstop">' + ICON.restart + 'Change settings</button></div>' +
-      '<div class="score-row"><div class="box"><b>' + Math.min(P.len, res.length + (P.answered ? 0 : 1)) + '/' + P.len + '</b><span>Decision</span></div><div class="box"><b>' + (res.length ? Math.round(100 * credit2 / res.length) + '%' : '--') + '</b><span>Score</span></div><div class="box"><b>' + (res.length ? Math.round(100 * f2 / res.length) + '%' : '--') + '</b><span>First try</span></div><div class="box"><b>' + P.streak + '</b><span>Streak</span></div></div>' + dotsHtml();
+      '<div class="score-row"><div class="box"><b>' + Math.min(P.len, P.results.length + (P.answered ? 0 : 1)) + '/' + P.len + '</b><span>Decision</span></div><div class="box"><b>' + (res.length ? Math.round(100 * credit2 / res.length) + '%' : '--') + '</b><span>Score</span></div><div class="box"><b>' + (res.length ? Math.round(100 * f2 / res.length) + '%' : '--') + '</b><span>First try</span></div><div class="box"><b>' + P.streak + '</b><span>Streak</span></div></div>' + dotsHtml();
     var len = S.moves.length;
     var n = curNode();
     if (P.answered) {
@@ -1438,8 +1499,9 @@
       var opp = S.moves.length >= 2 ? S.moves[S.moves.length - 2].edge : null;
       var oa = opp && !opp.isLearner && opp.ann ? opp.ann : {};
       var node = graph().nodes[e.fromKey];
-      var title = P.answered.credit === 1 ? 'Correct: ' : P.answered.credit > 0 ? 'Playable alternative (partial credit): ' : 'Played after a hint: ';
-      html += '<div class="coach ' + (P.answered.credit === 1 ? 'good' : 'alt') + '"><h3>' + esc(title + moveLabel(plyOf(node), e.san)) + '</h3>' +
+      var title = P.answered.intro ? 'New move learned: ' : P.answered.credit === 1 ? 'Correct: ' : P.answered.credit > 0 ? 'Playable alternative (partial credit): ' : 'Played after a hint: ';
+      html += '<div class="coach ' + (P.answered.intro || P.answered.credit === 1 ? 'good' : 'alt') + '"><h3>' + esc(title + moveLabel(plyOf(node), e.san)) + '</h3>' +
+        (P.answered.intro ? '<p>Not scored. The next time this position comes up, you find the move yourself.</p>' : '') +
         (e.rec ? '' : '<p>The course recommends ' + esc(moveLabel(plyOf(node), recEdgeAt(node).san)) + ' here.</p>') +
         kv([['Why this works', a.idea || (recEdgeAt(node).ann || {}).idea], ['What ' + (c.side === 'w' ? 'Black' : 'White') + ' threatens', oa.threat], ['Typical mistake', a.mistake || a.watch || oa.avoid]]) +
         (S.mode === 'done' && S.completed ? '<p><b>Line complete: ' + esc((lineById(S.completed.id) || {}).name || '') + '.</b> Continue loads the next variation.</p>' : '') +
@@ -1450,11 +1512,12 @@
       var rec = recEdgeAt(n);
       var last = S.moves[len - 1];
       var la = last && last.edge && last.edge.ann ? last.edge.ann : {};
-      html += '<div class="coach"><div class="status"><span class="pulse"></span>' + (last ? 'After ' + esc(moveLabel(len - 1, last.san)) + ', what do you play?' : 'Your move: start the opening') + '</div>' +
-        (P.warmup ? '<p class="muted">Warm-up: play the opening moves to reach the position yourself. Checked, but not scored.</p>' : '') +
+      html += '<div class="coach' + (P.intro ? ' path' : '') + '"><div class="status"><span class="pulse"></span>' + (P.intro ? '<span class="chip new">New</span>' : '') + (last ? 'After ' + esc(moveLabel(len - 1, last.san)) + ', what do you play?' : 'Your move: start the opening') + '</div>' +
+        (P.intro ? '<p>You have not seen this position yet, so here is the move to learn. Play it on the board (follow the green arrow).</p>' : '') +
+        (P.warmup && !P.intro ? '<p class="muted">Warm-up: play the opening moves to reach the position yourself. Checked, but not scored.</p>' : '') +
         (P.mode !== 'challenge' && la.what ? '<p>' + esc(la.what) + '</p>' : '') +
         (P.lastWrong ? '<p style="color:var(--orange)"><b>' + esc(P.lastWrong) + '</b> is legal, but it is not this course\'s move here.' + (P.revealed ? '' : ' Try again.') + '</p>' : '') +
-        (P.revealed && rec ? '<div class="movechoice">' + moveChip(rec, n, 'Recommended') + '</div>' + kv([['Why', (rec.ann || {}).idea]]) : '') +
+        (P.revealed && rec ? '<div class="movechoice">' + moveChip(rec, n, 'Recommended') + '</div>' + kv([['Why', (rec.ann || {}).idea], ['Watch out', P.intro ? (rec.ann || {}).watch : '']]) : '') +
         '<div class="btn-row">' + (P.mode === 'recall' && P.tries > 0 && !P.revealed ? '<button class="btn small" data-act="phint">' + ICON.hint + 'Hint</button>' : '') + '</div></div>';
     } else {
       html += '<div class="coach"><div class="status"><span class="pulse"></span>Opponent is choosing a book move...</div></div>';
@@ -1476,8 +1539,8 @@
     var html = '<div class="dots" aria-label="Session results">';
     for (var i = 0; i < P.len; i++) {
       var r = P.results[i];
-      var cls = r ? (r.credit === 1 ? 'ok' : r.credit > 0 ? 'part' : 'bad') : (i === P.results.length && !P.done ? 'now' : '');
-      html += '<i class="' + cls + '">' + (r ? (r.credit === 1 ? '' : r.credit > 0 ? '~' : 'x') : '') + '</i>';
+      var cls = r ? (r.intro ? 'new' : r.credit === 1 ? 'ok' : r.credit > 0 ? 'part' : 'bad') : (i === P.results.length && !P.done ? 'now' : '');
+      html += '<i class="' + cls + '"' + (r && r.intro ? ' title="New move learned (not scored)"' : '') + '>' + (r ? (r.intro ? '+' : r.credit === 1 ? '' : r.credit > 0 ? '~' : 'x') : '') + '</i>';
     }
     return html + '</div>';
   }
@@ -1735,10 +1798,13 @@
     'e4 e5 Nc3 Nf6 f4 d5'.split(' ').forEach(function (m) { hg.move(m); });
     heroFen = hg.fen();
     app.innerHTML = '<div class="home">' +
-      '<section class="hero"><div><h1>Learn openings by playing them.</h1><p>Opening Lab drills a complete beginner-friendly repertoire (1.e4 as White; the Caro-Kann, the Slav and one simple setup against everything else as Black) against an opponent that only plays real book moves. A branching tree shows every reply, each decision explains the idea, and Stockfish in your browser shows who is winning after every move.</p>' +
-      '<div class="btn-row"><button class="btn primary" data-act="open-course" data-cid="' + (store.settings.course || 'vienna') + '">' + (store.settings.course ? 'Continue: ' + esc(courseById(store.settings.course).name) : 'Start with the Vienna') + '</button>' +
+      '<section class="hero"><div><h1>Learn openings by playing them.</h1><p>Opening Lab drills a complete beginner-friendly repertoire (1.e4 as White; the Caro-Kann or the Sicilian, the Slav and one simple setup against everything else as Black) against an opponent that only plays real book moves. A branching tree shows every reply, each decision explains the idea, and Stockfish in your browser shows who is winning after every move.</p>' +
+      '<div class="btn-row"><button class="btn primary" data-act="open-course" data-cid="' + (store.settings.course || 'vienna') + '">' + (store.settings.course ? 'Continue: ' + esc(courseById(store.settings.course).name) : 'Start here: the Vienna Game') + '</button>' +
       '<button class="selftest-badge" data-act="selftest" title="Open the self-test report">' + (ok ? '<span class="ok">&#10003;</span>' : '<span class="bad">!</span>') + ' ' + DIAG.linesOk + '/' + DIAG.lines + ' lines validated; ' + DIAG.illegalEdges + ' illegal edges; ' + DIAG.unreachable + ' unreachable lessons</button></div></div>' +
       '<div class="hero-board">' + staticBoard(heroFen, false) + '</div></section>' +
+      '<section class="how" aria-label="How it works"><div><b>1</b><h3>Pick a course</h3><p>One for White, one for Black against 1.e4, then the others when you meet them.</p></div>' +
+      '<div><b>2</b><h3>Learn the core lines</h3><p>In Learn &amp; Explore the green arrow shows your move and a card explains why. Your path lists which line to learn next.</p></div>' +
+      '<div><b>3</b><h3>Practice</h3><p>The Practice tab quizzes you, weak spots first. New positions are shown to you before they are tested.</p></div></section>' +
       '<h2 class="section-title">Choose a course</h2><p class="section-sub">Built for roughly 500-900 rapid players who want to understand the replies they actually meet, not memorise 30 moves of grandmaster theory.</p>' +
       '<div class="cards">' + cards + '</div>' +
       coverageHtml() +
@@ -1908,6 +1974,16 @@
         n.edges.forEach(function (x) { if (x.uci === uci) e = x; });
         if (S.mode === 'oob') { var bi = lastBookIndex(); truncateTo(bi); S.mode = 'book'; n = curNode(); n.edges.forEach(function (x) { if (x.uci === uci) e = x; }); }
         if (e) onUserMove(e.from, e.to, e.promotion);
+        break;
+      }
+      case 'lshow': store.settings.lshow = el.getAttribute('data-v') === '1'; save(); render(); break;
+      case 'learn-line': {
+        var lid = el.getAttribute('data-id');
+        if (P.active) stopPracticeSilently();
+        S.forced = lid; S.forcedNoted = false;
+        if (APP.tab !== 'learn') { APP.tab = 'learn'; setTab('learn'); }
+        restart();
+        toast('Learning ' + lineById(lid).name + '. The opponent follows this line.');
         break;
       }
       case 'pmode': store.settings.pmode = el.getAttribute('data-v'); save(); render(); break;

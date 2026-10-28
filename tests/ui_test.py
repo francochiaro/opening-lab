@@ -114,7 +114,9 @@ with sync_playwright() as p:
     badge = pg.inner_text('.selftest-badge')
     check('self-test badge shows live computed counts', ('%d/%d lines validated' % (diag['linesOk'], diag['lines'])) in badge and diag['linesOk'] == diag['lines'], badge)
     check('in-app self-test all pass', pg.evaluate('OpeningLab.selftest.every(function(r){return r.ok})'))
-    check('seven course cards with suitability info', pg.locator('.card[data-act="open-course"]').count() == 7 and pg.locator('.card .chip.elo').count() == 7)
+    n_courses = pg.evaluate('OL_COURSES.length')
+    check('one course card per course (%d) with suitability info' % n_courses, n_courses == 8 and pg.locator('.card[data-act="open-course"]').count() == n_courses and pg.locator('.card .chip.elo').count() == n_courses)
+    check('home explains how it works in three steps', pg.locator('.how > div').count() == 3)
     cov = pg.inner_text('.home')
     check('home coverage map lists Black answers to rare first moves and White answers to odd replies', all(t in cov for t in ['1.b4', '1.g4', '1.d4', '1...c5', '1...b6', '1...e5 2.Nf3 f6']), '')
 
@@ -361,8 +363,8 @@ with sync_playwright() as p:
     done = pg.evaluate("OpeningLab.practice().done")
     check('Practice session of 5 decisions completes with a summary', done and pg.locator('text=Session complete').count() == 1)
     check('Caro-Kann practice never asks the learner to play White', not asked_white)
-    prog = pg.evaluate("Object.keys(JSON.parse(localStorage.getItem('openingLab.v1')).courses.caro.nodes).length")
-    check('Practice decisions are stored', prog >= 4, prog)
+    prog = pg.evaluate("(function(){var c=JSON.parse(localStorage.getItem('openingLab.v1')).courses.caro;return Object.keys(c.nodes).length+Object.keys(c.learned||{}).length})()")
+    check('Practice decisions (tested or newly learned) are stored', prog >= 4, prog)
 
     print('\nPractice: line that ends on your own move')
     open_course(pg, 'caro', 'practice')
@@ -396,7 +398,8 @@ with sync_playwright() as p:
     pg.click('button[data-act="pstartfrom"][data-v="start"]')
     pg.click('button[data-act="pstart"]')
     pg.wait_for_timeout(400)
-    check('Practice from move 1: the board starts empty and the learner plays 1.e4 (warm-up)', hist(pg) == [] and 'Warm-up' in pg.inner_text('#side'), hist(pg))
+    side_txt = pg.inner_text('#side')
+    check('Practice from move 1: the board starts empty and the learner plays 1.e4 (warm-up or new-move intro)', hist(pg) == [] and ('Warm-up' in side_txt or 'here is the move to learn' in side_txt), hist(pg))
     play(pg, 'e4'); wait_hist(pg, 2)
     check('Warm-up move accepted without a score card, opponent replies', hist(pg) == ['e4', 'e5'] and pg.evaluate("OpeningLab.practice().results.length") == 0, hist(pg))
     pg.click('.line-head button[data-act="pstop"]')
@@ -406,6 +409,49 @@ with sync_playwright() as p:
     pg.click('button[data-act="pstart"]')
     pg.wait_for_timeout(400)
     check('Key position mode skips the opening moves', len(hist(pg)) >= 5 and hist(pg)[:5] == ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5'], hist(pg))
+
+    print('\nFirst-time guidance (fresh browser profile)')
+    fc = browser.new_context(viewport={'width': 1440, 'height': 900})
+    fp = fc.new_page()
+    fp.on('pageerror', lambda e: errors.append(str(e)))
+    green = "document.querySelectorAll('#arrows polyline[stroke=\"#5fae3a\"]').length"
+    fp.goto(URL + '#/sicilian/learn'); fp.wait_for_selector('#board .sq'); wait_hist(fp, 1); fp.wait_for_timeout(300)
+    status = fp.inner_text('#side .coach.good .status')
+    check('Guide: a first-time learner is told the move (play 1...c5) and sees the green arrow', 'play 1...c5' in status and fp.evaluate(green) == 1, status)
+    check('Guide: the "Your path" card lists the core lines with a start button', fp.locator('.coach.path button.primary[data-act="learn-line"]').count() == 1 and fp.locator('.coach.path .pathlist li').count() >= 5)
+    fp.click('button[data-act="lshow"][data-v="0"]'); fp.wait_for_timeout(150)
+    check('Guide: Quiz me hides the arrow and blurs the options again', fp.evaluate(green) == 0 and fp.locator('.reveal.shown').count() == 0)
+    fp.click('button[data-act="lshow"][data-v="1"]'); fp.wait_for_timeout(150)
+    first_core = fp.evaluate("OpeningLab.graphs.sicilian.lines.filter(function(l){return l.def.tier==='core'})[0].def.id")
+    fp.click('.coach.path button.primary[data-act="learn-line"]'); fp.wait_for_timeout(300)
+    check('Guide: the start button loads the first core line', fp.evaluate('OpeningLab.state().forced') == first_core, fp.evaluate('OpeningLab.state().forced'))
+    ok, d = play_line_as_learner(fp, first_core)
+    fp.wait_for_timeout(1700)
+    check('Sicilian: the first core line plays through as Black', ok and fp.evaluate('OpeningLab.state().mode') == 'done', d)
+    fp.click('#side button[data-act="newvar"]'); fp.wait_for_timeout(400)
+    check('Guide: after one line the path card shows the progress', 'Your path: 1/' in fp.inner_text('#side'))
+
+    fp.goto(URL + '#/e4others/practice'); fp.reload(); fp.wait_for_selector('#board .sq'); fp.wait_for_timeout(300)
+    check('Practice: a course with no progress suggests learning first', fp.locator('text=First time here?').count() == 1)
+    fp.click('button[data-act="pmode"][data-v="recall"]'); fp.click('button[data-act="pstartfrom"][data-v="start"]'); fp.click('button[data-act="plen"][data-v="5"]')
+    fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
+    check('Practice: an unseen first move is shown, not tested (Recall mode)', fp.evaluate('OpeningLab.practice().intro') and fp.evaluate(green) == 1 and fp.locator('#side .chip.new').count() == 1)
+    for step in range(60):
+        pr = fp.evaluate("(function(){var P=OpeningLab.practice();return {done:P.done, awaiting:P.awaiting, answered:!!P.answered}})()")
+        if pr['done']:
+            break
+        if pr['answered']:
+            fp.click('button[data-act="pcontinue"]'); fp.wait_for_timeout(100); continue
+        if pr['awaiting'] and fp.evaluate("OpeningLab.fen()").split(' ')[1] == 'w':
+            play(fp, rec_san(fp)); fp.wait_for_timeout(150)
+        fp.wait_for_timeout(250)
+    res = fp.evaluate("OpeningLab.practice().results.map(function(r){return !!r.intro})")
+    store = fp.evaluate("JSON.parse(localStorage.getItem('openingLab.v1')).courses.e4others")
+    check('Practice: new positions are learned without a score or a mistake', fp.evaluate('OpeningLab.practice().done') and len(res) == 5 and all(res) and len(store['learned']) >= 5 and not store['mistakes'], (res, len(store['learned'])))
+    fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
+    check('Practice: the next time the same position comes up, it is tested', fp.evaluate('OpeningLab.practice().intro') is False and fp.locator('#side .chip.new').count() == 0)
+    fp.screenshot(path=str(SHOTS / 'first-time-practice.png'))
+    fc.close()
 
     print('\nPersistence')
     open_course(pg, 'caro', 'practice')

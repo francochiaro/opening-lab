@@ -399,3 +399,21 @@ select.sel { background: var(--panel-2); border: 1px solid var(--line); border-r
   .status .pulse { animation: none; }
   .confetti { display: none; }
 }
+
+.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 26px; }
+.how > div { background: var(--card); border-radius: 8px; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: start; }
+.how b { grid-row: span 2; width: 26px; height: 26px; border-radius: 50%; background: var(--green); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+.how h3 { margin: 2px 0 4px; font-size: 15px; }
+.how p { margin: 0; color: var(--text-2); font-size: 13px; }
+.coach.path { border-left-color: var(--green); background: var(--panel-2); }
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; color: var(--text-2); }
+.pathlist { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 2px; font-size: 13px; }
+.pathlist li.done { color: var(--muted); }
+.linkish { vertical-align: top; background: none; border: 0; padding: 0; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.linkish:hover { color: var(--green-hi); text-decoration: underline; }
+.pathlist li.done .linkish { color: var(--muted); }
+.tick { color: var(--green); font-weight: 900; margin-right: 6px; }
+details.sub > summary { cursor: pointer; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; padding: 4px 0; }
+.chip.new { background: var(--green); color: #fff; margin-right: 6px; }
+.dots i.new { background: var(--blue); }
+@media (max-width: 760px) { .how { grid-template-columns: 1fr; } }
