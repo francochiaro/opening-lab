@@ -415,5 +415,4 @@ select.sel { background: var(--panel-2); border: 1px solid var(--line); border-r
 .tick { color: var(--green); font-weight: 900; margin-right: 6px; }
 details.sub > summary { cursor: pointer; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; padding: 4px 0; }
 .chip.new { background: var(--green); color: #fff; margin-right: 6px; }
-.dots i.new { background: var(--blue); }
 @media (max-width: 760px) { .how { grid-template-columns: 1fr; } }

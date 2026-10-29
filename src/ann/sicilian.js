@@ -38,7 +38,7 @@
     D23: "You have the two bishops and a solid pawn on e5. Castle, then play ...f6 to support e5 and ...Be6. Later, open lines so the bishops can work.",
     D24: "Play on the queenside with ...Rb8, ...b5 and ...b4, and put a knight on d4. White will push f5 on the kingside, so do not leave your king short of defenders.",
     D25: "Develop ...Be7 or ...Bd6, castle and play ...Bg4. Your d5 pawn gives you central space; watch for pins on the e-file before you castle.",
-    D26: "Castle quickly with ...Nge7 and ...O-O, then play ...Bg4. Watch for Re1 pins on the e-file. Your c5 and d5 pawns give you central space.",
+    D26: "This is the same position as the Bowdler line, reached by another move order. Play ...Be7 and castle, watch for Re1 checks on the e-file, and use your c5 and d5 pawns for central space.",
     D27: "You are a pawn up in a queenless position, and White's king has lost the right to castle. Develop ...Nc6 and ...Be6 or ...Bf5, castle, and use the d-file. White's c-pawns are doubled.",
     D28: "Castle, then play ...Rb8 and ...b5-b4 on the queenside, or put a knight on d4. Your setup works the same way against any slow White system.",
     D29: "White's queen moved twice and you lead in development. Play ...Be6 or ...Bg4, ...Rc8, and ...Nd7-c5 to hit the d3 queen. ...a6 and ...b5 gain more space.",

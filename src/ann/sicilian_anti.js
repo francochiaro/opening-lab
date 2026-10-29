@@ -532,14 +532,8 @@
     'e4 c5 Nf3 Nc6 Bc4 e6 O-O d5 exd5 exd5': {
       idea: "Recapture with the pawn: you keep a central pawn and open the c8 bishop.",
       watch: "White's bishop is attacked and may go to b5 to pin your knight. Then a check on the e-file can follow.",
-      plan: "Develop ...Bd6 and ...Nge7, then castle.",
+      plan: "After Bb5, develop ...Nf6: this is now exactly the position from the Bowdler 2.Bc4 line. Then ...Be7 and castle.",
       mistake: "Moving the king or queen onto the open e-file before you castle."
-    },
-    'e4 c5 Nf3 Nc6 Bc4 e6 O-O d5 exd5 exd5 Bb5 Bd6': {
-      idea: "Develop the bishop to its best square. It watches the kingside and gets ready for castling.",
-      watch: "White may give checks on the e-file with Re1+ or Qe2+. Block with ...Nge7 or ...Be6.",
-      plan: "Next ...Nge7 and ...O-O.",
-      mistake: "Delaying castling. Your king is still on the open e-file."
     },
 
     // ---------------- Wing Gambit 2.b4 ----------------

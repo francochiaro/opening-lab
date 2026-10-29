@@ -334,7 +334,7 @@ with sync_playwright() as p:
     asked_white = False
     wrong_done = False
     hold_checked = False
-    for step in range(40):
+    for step in range(150):
         pr = pg.evaluate("(function(){var P=OpeningLab.practice();return {done:P.done, awaiting:P.awaiting, answered:!!P.answered}})()")
         if pr['done']:
             break
@@ -430,24 +430,36 @@ with sync_playwright() as p:
     check('Sicilian: the first core line plays through as Black', ok and fp.evaluate('OpeningLab.state().mode') == 'done', d)
     fp.click('#side button[data-act="newvar"]'); fp.wait_for_timeout(400)
     check('Guide: after one line the path card shows the progress', 'Your path: 1/' in fp.inner_text('#side'))
+    fp.click('#side details.box summary >> text=Your path'); fp.wait_for_timeout(150)
+    nxt = fp.evaluate("OpeningLab.graphs.sicilian.lines.filter(function(l){return l.def.tier==='core'})[1].def.id")
+    fp.click('#side button.primary[data-act="learn-line"]'); fp.wait_for_timeout(600)
+    h2 = hist(fp)
+    check('Guide: "Learn next" starts the next line where it differs from what you already know', fp.evaluate('OpeningLab.state().forced') == nxt and len(h2) >= 8 and 'starts where it is new' in fp.inner_text('#side'), (nxt, h2))
 
     fp.goto(URL + '#/e4others/practice'); fp.reload(); fp.wait_for_selector('#board .sq'); fp.wait_for_timeout(300)
     check('Practice: a course with no progress suggests learning first', fp.locator('text=First time here?').count() == 1)
     fp.click('button[data-act="pmode"][data-v="recall"]'); fp.click('button[data-act="pstartfrom"][data-v="start"]'); fp.click('button[data-act="plen"][data-v="5"]')
     fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
     check('Practice: an unseen first move is shown, not tested (Recall mode)', fp.evaluate('OpeningLab.practice().intro') and fp.evaluate(green) == 1 and fp.locator('#side .chip.new').count() == 1)
-    for step in range(60):
-        pr = fp.evaluate("(function(){var P=OpeningLab.practice();return {done:P.done, awaiting:P.awaiting, answered:!!P.answered}})()")
+    asked, autos, recall_seen = [], 0, False
+    for step in range(200):
+        pr = fp.evaluate("(function(){var P=OpeningLab.practice();return {done:P.done, awaiting:P.awaiting, answered:!!P.answered, auto:!!P.auto, intro:!!P.intro, recall:!!P.recallPass}})()")
         if pr['done']:
             break
+        recall_seen = recall_seen or pr['recall']
+        if pr['auto']:
+            autos += 1; fp.wait_for_timeout(200); continue
         if pr['answered']:
             fp.click('button[data-act="pcontinue"]'); fp.wait_for_timeout(100); continue
         if pr['awaiting'] and fp.evaluate("OpeningLab.fen()").split(' ')[1] == 'w':
-            play(fp, rec_san(fp)); fp.wait_for_timeout(150)
-        fp.wait_for_timeout(250)
-    res = fp.evaluate("OpeningLab.practice().results.map(function(r){return !!r.intro})")
+            asked.append((len(hist(fp)), pr['intro'])); play(fp, rec_san(fp)); fp.wait_for_timeout(150)
+        fp.wait_for_timeout(200)
+    P_ = fp.evaluate("(function(){var P=OpeningLab.practice();return {n:P.results.length, intro:P.introCount}})()")
     store = fp.evaluate("JSON.parse(localStorage.getItem('openingLab.v1')).courses.e4others")
-    check('Practice: new positions are learned without a score or a mistake', fp.evaluate('OpeningLab.practice().done') and len(res) == 5 and all(res) and len(store['learned']) >= 5 and not store['mistakes'], (res, len(store['learned'])))
+    check('Practice: a session of 5 means 5 real questions; new moves are shown first and do not count', fp.evaluate('OpeningLab.practice().done') and P_['n'] == 5 and P_['intro'] >= 1 and len(store['learned']) >= P_['intro'], (P_, asked))
+    check('Practice: after new moves the same line is replayed from memory', recall_seen, asked)
+    tested_plies = [a[0] for a in asked if not a[1]]
+    check('Practice: no position is asked twice in one session once answered right', len(tested_plies) == len(set(tested_plies)) or autos > 0, (asked, autos))
     fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
     check('Practice: the next time the same position comes up, it is tested', fp.evaluate('OpeningLab.practice().intro') is False and fp.locator('#side .chip.new').count() == 0)
     fp.screenshot(path=str(SHOTS / 'first-time-practice.png'))

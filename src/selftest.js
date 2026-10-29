@@ -120,8 +120,15 @@
       check('Sicilian transpositions: Alapin, 2.Nf3 Nc6 3.c3 and the Smith-Morra decline meet in one position', alA && smA && nfA && alA.key === smA.key && alA.key === nfA.key);
       var n2 = nodeAfter('sicilian', 'e4 c5 Nf3');
       check('Sicilian: the Najdorf/Dragon (2...d6) and Kan (2...e6) are optional alternatives, never the recommendation', n2 && ['d6', 'e6'].every(function (m) { return n2.edges.some(function (e) { return e.san === m && e.isLearner && !e.rec; }); }));
+      var offRec = graphs.sicilian.lines.filter(function (l) {
+        return !l.def.optional && !l.sans.every(function (san, i) {
+          var nd = graphs.sicilian.nodes[l.path[i]];
+          return nd.turn !== 'b' || nd.edges.some(function (e) { return e.san === san && e.rec; });
+        });
+      }).map(function (l) { return l.def.id; });
+      check('Sicilian: every non-optional line can be played with the recommended moves only', offRec.length === 0, offRec.join(' '));
       if (graphs.e4others) {
-        var alp = 'e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6 cxd4 d6 Bc4 Nb6 Bb5';
+        var alp ='e4 c5 c3 Nf6 e5 Nd5 d4 cxd4 Nf3 Nc6 cxd4 d6 Bc4 Nb6 Bb5';
         check('Alapin as Black matches the 1.e4 Others course as White, move for move', !!nodeAfter('sicilian', alp) && !!nodeAfter('e4others', alp));
       }
     }
