@@ -441,25 +441,42 @@ with sync_playwright() as p:
     fp.click('button[data-act="pmode"][data-v="recall"]'); fp.click('button[data-act="pstartfrom"][data-v="start"]'); fp.click('button[data-act="plen"][data-v="5"]')
     fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
     check('Practice: an unseen first move is shown, not tested (Recall mode)', fp.evaluate('OpeningLab.practice().intro') and fp.evaluate(green) == 1 and fp.locator('#side .chip.new').count() == 1)
-    asked, autos, recall_seen = [], 0, False
+    asked, recall_seen, self_moved = [], False, []
     for step in range(200):
-        pr = fp.evaluate("(function(){var P=OpeningLab.practice();return {done:P.done, awaiting:P.awaiting, answered:!!P.answered, auto:!!P.auto, intro:!!P.intro, recall:!!P.recallPass}})()")
+        pr = fp.evaluate("(function(){var P=OpeningLab.practice();return {done:P.done, awaiting:P.awaiting, answered:!!P.answered, intro:!!P.intro, recall:!!P.recallPass}})()")
         if pr['done']:
             break
         recall_seen = recall_seen or pr['recall']
-        if pr['auto']:
-            autos += 1; fp.wait_for_timeout(200); continue
         if pr['answered']:
             fp.click('button[data-act="pcontinue"]'); fp.wait_for_timeout(100); continue
         if pr['awaiting'] and fp.evaluate("OpeningLab.fen()").split(' ')[1] == 'w':
             asked.append((len(hist(fp)), pr['intro'])); play(fp, rec_san(fp)); fp.wait_for_timeout(150)
+            if len(asked) <= 4:
+                n0 = len(hist(fp)); fp.wait_for_timeout(2200)
+                if fp.evaluate("OpeningLab.state().mode") != 'done' and len(hist(fp)) > n0 + 1:
+                    self_moved.append((n0, hist(fp)))
         fp.wait_for_timeout(200)
     P_ = fp.evaluate("(function(){var P=OpeningLab.practice();return {n:P.results.length, intro:P.introCount}})()")
     store = fp.evaluate("JSON.parse(localStorage.getItem('openingLab.v1')).courses.e4others")
     check('Practice: a session of 5 means 5 real questions; new moves are shown first and do not count', fp.evaluate('OpeningLab.practice().done') and P_['n'] == 5 and P_['intro'] >= 1 and len(store['learned']) >= P_['intro'], (P_, asked))
     check('Practice: after new moves the same line is replayed from memory', recall_seen, asked)
-    tested_plies = [a[0] for a in asked if not a[1]]
-    check('Practice: no position is asked twice in one session once answered right', len(tested_plies) == len(set(tested_plies)) or autos > 0, (asked, autos))
+    check('Practice (Move 1): the board never plays your moves for you', not self_moved, self_moved)
+    fp.click('button[data-act="pstop"] >> nth=0'); fp.wait_for_timeout(200)
+    fp.click('button[data-act="pstartfrom"][data-v="known"]'); fp.click('button[data-act="plen"][data-v="10"]'); fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
+    starts, last_line, first_at = [], None, None
+    for step in range(260):
+        pr = fp.evaluate("(function(){var P=OpeningLab.practice();return {done:P.done, awaiting:P.awaiting, answered:!!P.answered, line:P.line, rp:!!P.recallPass}})()")
+        if pr['done']:
+            break
+        if pr['answered']:
+            fp.click('button[data-act="pcontinue"]'); fp.wait_for_timeout(100); continue
+        if pr['awaiting'] and fp.evaluate("OpeningLab.fen()").split(' ')[1] == 'w':
+            key = (pr['line'], pr['rp'])
+            if key != last_line:
+                starts.append(len(hist(fp))); last_line = key
+            play(fp, rec_san(fp)); fp.wait_for_timeout(150)
+        fp.wait_for_timeout(200)
+    check('Practice (Skip what I know): later lines start past the moves you already got right', len(starts) >= 2 and max(starts[1:]) >= 2, starts)
     fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
     check('Practice: the next time the same position comes up, it is tested', fp.evaluate('OpeningLab.practice().intro') is False and fp.locator('#side .chip.new').count() == 0)
     fp.screenshot(path=str(SHOTS / 'first-time-practice.png'))

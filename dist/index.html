@@ -9065,7 +9065,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
     }
     S.view = S.moves.length;
     S.completed = null; S.feedback = null; S.paused = false; S.sel = null; S.note = null;
-    if (P.active && !P.done) { P.answered = null; P.awaiting = false; P.auto = false; }
+    if (P.active && !P.done) { P.answered = null; P.awaiting = false; }
     render();
     continueFlow();
   }
@@ -9192,10 +9192,18 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
   function practiceStartLine() {
     cancelPending();
     S.moves = []; S.view = 0; S.mode = 'book'; S.completed = null; S.feedback = null; S.paused = false; S.sel = null; S.note = null;
-    P.awaiting = false; P.answered = null; P.tries = 0; P.lineIntros = 0; P.auto = false;
+    P.awaiting = false; P.answered = null; P.tries = 0; P.lineIntros = 0;
     var ident = course().identity.split(' ');
     var L = gLine(S.cid, P.line);
     var pre = store.settings.pstart === 'key' ? Math.min(ident.length, L.sans.length) : 0;
+    if (store.settings.pstart === 'known') {
+      for (pre = 0; pre < L.sans.length; pre++) {
+        var nd = graph().nodes[L.path[pre]];
+        if (nd.turn === course().side && !practiceKnown(nd.key)) break;
+      }
+      if (pre >= L.sans.length) pre = 0;
+    }
+    P.skipped = pre;
     for (var i = 0; i < pre; i++) {
       var g = new Chess(posFen(S.moves.length));
       var mv = g.move(L.sans[i]);
@@ -9206,43 +9214,13 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
     continueFlow();
   }
 
-  function practiceAutoEdge(n) {
-    var L = gLine(S.cid, P.line), idx = L ? L.path.indexOf(n.key) : -1;
-    var mine = n.edges.filter(function (e) { return e.isLearner; });
-    if (idx >= 0 && idx < L.path.length - 1) for (var i = 0; i < mine.length; i++) if (mine[i].toKey === L.path[idx + 1]) return mine[i];
-    return recEdgeAt(n);
-  }
-
   function practiceKnown(key) {
     var st = cprog(S.cid).nodes[key];
     return !!(P.okKeys[key] || (st && st.m));
   }
 
-  function practiceWorkAhead(n) {
-    var L = gLine(S.cid, P.line), idx = L ? L.path.indexOf(n.key) : -1;
-    if (idx < 0) return false;
-    for (var i = idx + 1; i < L.path.length; i++) {
-      var k = L.path[i], nd = graph().nodes[k];
-      if (nd.turn === course().side && nd.edges.some(function (e) { return e.isLearner; }) && !practiceKnown(k)) return true;
-    }
-    return false;
-  }
-
   function practiceDecisionStart(n) {
     if (P.awaiting && P.key === n.key) return;
-    if (P.auto) { if (P.auto.ply === S.moves.length && S.timer) return; P.auto = false; }
-    if (practiceKnown(n.key) && practiceWorkAhead(n)) {
-      var e = practiceAutoEdge(n), sess = S, tok = S.token;
-      P.auto = { san: e.san, ply: S.moves.length };
-      P.awaiting = false;
-      S.timer = setTimeout(function () {
-        if (sess !== S || tok !== S.token || !P.active || P.done) return;
-        S.timer = null;
-        P.auto = false;
-        onUserMove(e.from, e.to, e.promotion);
-      }, reducedMotion ? 150 : 450);
-      return;
-    }
     P.awaiting = true; P.answered = null; P.tries = 0; P.key = n.key;
     P.intro = isNewPosition(n.key);
     P.revealed = P.mode === 'guided' || P.intro;
@@ -9385,7 +9363,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
     var p = g.get(sq);
     if (!p) return false;
     if (S.mode === 'free' || S.mode === 'oob' || S.mode === 'done') return p.color === g.turn();
-    if (P.active && (P.answered || P.done || P.auto)) return false;
+    if (P.active && (P.answered || P.done)) return false;
     return p.color === course().side && g.turn() === course().side && !S.thinking;
   }
   function targetsFrom(sq) {
@@ -10098,7 +10076,7 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
         startFromHtml(false) +
         '<div class="field"><span class="lbl">Session length</span><div class="seg" role="group" aria-label="Session length">' + [5, 10, 15].map(function (n) {
           return '<button data-act="plen" data-v="' + n + '" aria-pressed="' + (store.settings.plen === n) + '">' + n + ' questions</button>';
-        }).join('') + '</div><span class="muted">Only moves you are asked to find count. New moves are shown first, then you replay that line from memory. Moves you already know (right this session, or mastered) are played for you, so each line skips to the part you still need.</span></div>' +
+        }).join('') + '</div><span class="muted">Only moves you are asked to find count. New moves are shown first, then you replay that line from memory. To stop replaying the opening moves you know, set Lines start from to Skip what I know.</span></div>' +
         '<div class="field"><label for="pscope">Scope</label><select id="pscope" class="sel" data-act="pscope">' + lineOptions(P.scopePick && P.scopePick !== 'all' ? P.scopePick : null, 'Practice all branches (weak spots first)').replace('Choose a specific line...', '') + '</select></div>' +
         '<button class="btn primary" data-act="pstart">Start practice</button>' +
         '<div class="score-row"><div class="box"><b>' + pr.seen + '/' + pr.total + '</b><span>Decisions seen</span></div><div class="box"><b>' + pr.mastered + '</b><span>Mastered</span></div><div class="box"><b>' + (pr.firstTry == null ? '--' : pr.firstTry + '%') + '</b><span>First-try correct</span></div><div class="box"><b>' + pr.linesDone + '/' + pr.lines + '</b><span>Lines finished</span></div></div>' +
@@ -10139,14 +10117,13 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
         '<div class="btn-row"><button class="btn primary" data-act="pcontinue" autofocus>Continue</button></div></div>';
     } else if (S.mode === 'done') {
       html += '<div class="coach done"><h3>Line complete</h3><p>Loading the next variation...</p></div>';
-    } else if (P.auto) {
-      html += '<div class="coach"><div class="status"><span class="pulse"></span>Playing ' + esc(moveLabel(P.auto.ply, P.auto.san)) + ' for you: you already know it.</div></div>';
     } else if (P.awaiting && n && learnerTurnAt(len)) {
       var rec = recEdgeAt(n);
       var last = S.moves[len - 1];
       var la = last && last.edge && last.edge.ann ? last.edge.ann : {};
       html += '<div class="coach' + (P.intro ? ' path' : '') + '"><div class="status"><span class="pulse"></span>' + (P.intro ? '<span class="chip new">New</span>' : '') + (last ? 'After ' + esc(moveLabel(len - 1, last.san)) + ', what do you play?' : 'Your move: start the opening') + '</div>' +
         (P.intro ? '<p>You have not seen this position yet, so here is the move to learn. Play it on the board (follow the green arrow). It does not count as a question; you get asked it when you replay this line from memory.</p>' : '') +
+        (P.skipped > 1 && len === P.skipped ? '<p class="muted">Skipped to move ' + (Math.floor(len / 2) + 1) + ': you already know the moves before it. Step back with the arrows to see them.</p>' : '') +
         (P.recallPass && !P.intro && !P.warmup ? '<p><b>From memory:</b> you just learned this line. Now play it without help.</p>' : '') +
         (P.warmup && !P.intro ? '<p class="muted">Warm-up: play the opening moves to reach the position yourself. Checked, but not scored.</p>' : '') +
         (P.mode !== 'challenge' && la.what ? '<p>' + esc(la.what) + '</p>' : '') +
@@ -10165,8 +10142,13 @@ window.OL_PIECES={"bB":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
     var v = store.settings.pstart;
     return '<div class="field"><span class="lbl">Lines start from</span><div class="seg" role="group" aria-label="Lines start from">' +
       '<button data-act="pstartfrom" data-v="start" aria-pressed="' + (v === 'start') + '">Move 1 (play the whole way)</button>' +
+      '<button data-act="pstartfrom" data-v="known" aria-pressed="' + (v === 'known') + '">Skip what I know</button>' +
       '<button data-act="pstartfrom" data-v="key" aria-pressed="' + (v === 'key') + '">Key position (skip the opening moves)</button></div>' +
-      '<span class="muted">' + (v === 'start' ? 'You play every move from the start, so you learn how to reach each position. The opening moves are a warm-up and are not scored.' : 'The first moves (' + esc(course().identity) + ') are played for you.') + (inSession ? ' Applies from the next line.' : '') + '</span></div>';
+      '<span class="muted">' + ({
+        start: 'You play every move from the start, so you learn how to reach each position. The opening moves are a warm-up and are not scored.',
+        known: 'Each line jumps once, at its start, to the first move you still need: one you have not answered right this session and have not mastered. From there you play every move.',
+        key: 'The first moves (' + esc(course().identity) + ') are played for you.'
+      }[v] || '') + (inSession ? ' Applies from the next line.' : '') + '</span></div>';
   }
 
   function dotsHtml() {
