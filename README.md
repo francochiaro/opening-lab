@@ -24,7 +24,7 @@ An interactive chess opening trainer for club players (roughly 500-1100 Elo). Yo
 - **Guidance for first-timers:** every course has a "Your path" card (learn the core lines, then practice, then the common ones) with a one-click "Learn next" line. In Learn & Explore the green arrow shows your move unless you switch to "Quiz me". In Practice, a position you have never seen is shown to you first and only tested the next time it comes up.
 - **Learn & Explore:** play against the book opponent with hints you reveal, plan arrows, and a note on every move (why it works, what to watch out for, the next plan, the typical mistake). If you play a legal move outside the course, the page says so, and links to another course when that course covers the position.
 - **Opening Tree:** a branching tree you can click. Any move loads its exact position. Filters, depth control and zoom.
-- **Practice:** Guided, Recall and Challenge modes, in sessions of 5, 10 or 15 decisions. Weak spots come up first. You can start from move 1 or from the key position. Progress is saved in your browser.
+- **Practice:** Guided, Recall and Challenge modes, in sessions of 1, 3 or 5 lines (each played to its end; new moves are shown first, then the line is replayed from memory). Weak spots come up first. You can start from move 1 or from the key position. Progress is saved in your browser.
 - **Analysis:** eval bar, top engine lines, a best-move arrow, move labels (Book, Best, Excellent, Good, Inaccuracy, Mistake, Blunder), an advantage graph and accuracy per side using the lichess formula. All of it comes from Stockfish 19 lite running in your browser. The book opponent never uses the engine.
 
 ## How it works

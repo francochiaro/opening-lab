@@ -75,6 +75,14 @@ def open_course(pg, cid, tab='learn'):
     pg.wait_for_timeout(200)
 
 
+def click_next_line(pg):
+    b = pg.locator('button[data-act="pnextline"]')
+    if b.count() and b.is_visible():
+        b.click(); pg.wait_for_timeout(150)
+        return True
+    return False
+
+
 def pick_line(pg, line_id):
     pg.select_option('select[data-act="pick-line"]', line_id)
     pg.wait_for_timeout(100)
@@ -329,7 +337,7 @@ with sync_playwright() as p:
     print('\nPractice')
     open_course(pg, 'caro', 'practice')
     pg.click('button[data-act="pmode"][data-v="recall"]')
-    pg.click('button[data-act="plen"][data-v="5"]')
+    pg.click('button[data-act="plines"][data-v="1"]')
     pg.click('button[data-act="pstart"]')
     asked_white = False
     wrong_done = False
@@ -338,6 +346,8 @@ with sync_playwright() as p:
         pr = pg.evaluate("(function(){var P=OpeningLab.practice();return {done:P.done, awaiting:P.awaiting, answered:!!P.answered}})()")
         if pr['done']:
             break
+        if click_next_line(pg):
+            continue
         if pr['answered']:
             if not hold_checked:
                 n_before = len(hist(pg))
@@ -361,7 +371,7 @@ with sync_playwright() as p:
             asked_white = True
         pg.wait_for_timeout(250)
     done = pg.evaluate("OpeningLab.practice().done")
-    check('Practice session of 5 decisions completes with a summary', done and pg.locator('text=Session complete').count() == 1)
+    check('Practice: a 1-line session ends after exactly one line, with a summary', done and pg.evaluate("OpeningLab.practice().linesDone") == 1 and pg.locator('text=Session complete').count() == 1)
     check('Caro-Kann practice never asks the learner to play White', not asked_white)
     prog = pg.evaluate("(function(){var c=JSON.parse(localStorage.getItem('openingLab.v1')).courses.caro;return Object.keys(c.nodes).length+Object.keys(c.learned||{}).length})()")
     check('Practice decisions (tested or newly learned) are stored', prog >= 4, prog)
@@ -370,7 +380,7 @@ with sync_playwright() as p:
     open_course(pg, 'caro', 'practice')
     pg.click('button[data-act="pmode"][data-v="guided"]')
     pg.click('button[data-act="pstartfrom"][data-v="key"]')
-    pg.click('button[data-act="plen"][data-v="15"]')
+    pg.click('button[data-act="plines"][data-v="3"]')
     end_line = pg.evaluate("""(function(){var g=OpeningLab.graphs.caro;var c=g.lines.filter(function(l){return l.sans.length%2===0 && g.nodes[l.leafKey].edges.length===0;});c.sort(function(a,b){return a.sans.length-b.sans.length});return {id:c[0].def.id,len:c[0].sans.length};})()""")
     pg.select_option('#pscope', end_line['id'])
     pg.click('button[data-act="pstart"]')
@@ -378,10 +388,12 @@ with sync_playwright() as p:
     held = None
     for step in range(60):
         pr = pg.evaluate("(function(){var P=OpeningLab.practice();return {answered:!!P.answered, awaiting:P.awaiting}})()")
+        if click_next_line(pg):
+            continue
         if pr['answered']:
             if len(hist(pg)) == line_len:
                 pg.wait_for_timeout(2600)
-                held = pg.locator('button[data-act="pcontinue"]').is_visible() and len(hist(pg)) == line_len and 'Line complete' in pg.inner_text('#side')
+                held = pg.locator('button[data-act="pcontinue"]').is_visible() and len(hist(pg)) == line_len and ' of 3' in pg.inner_text('#side')
                 pg.click('button[data-act="pcontinue"]')
                 pg.wait_for_timeout(800)
                 restarted = len(hist(pg)) < line_len
@@ -438,7 +450,7 @@ with sync_playwright() as p:
 
     fp.goto(URL + '#/e4others/practice'); fp.reload(); fp.wait_for_selector('#board .sq'); fp.wait_for_timeout(300)
     check('Practice: a course with no progress suggests learning first', fp.locator('text=First time here?').count() == 1)
-    fp.click('button[data-act="pmode"][data-v="recall"]'); fp.click('button[data-act="pstartfrom"][data-v="start"]'); fp.click('button[data-act="plen"][data-v="5"]')
+    fp.click('button[data-act="pmode"][data-v="recall"]'); fp.click('button[data-act="pstartfrom"][data-v="start"]'); fp.click('button[data-act="plines"][data-v="1"]')
     fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
     check('Practice: an unseen first move is shown, not tested (Recall mode)', fp.evaluate('OpeningLab.practice().intro') and fp.evaluate(green) == 1 and fp.locator('#side .chip.new').count() == 1)
     asked, recall_seen, self_moved = [], False, []
@@ -447,6 +459,8 @@ with sync_playwright() as p:
         if pr['done']:
             break
         recall_seen = recall_seen or pr['recall']
+        if click_next_line(fp):
+            continue
         if pr['answered']:
             fp.click('button[data-act="pcontinue"]'); fp.wait_for_timeout(100); continue
         if pr['awaiting'] and fp.evaluate("OpeningLab.fen()").split(' ')[1] == 'w':
@@ -456,18 +470,20 @@ with sync_playwright() as p:
                 if fp.evaluate("OpeningLab.state().mode") != 'done' and len(hist(fp)) > n0 + 1:
                     self_moved.append((n0, hist(fp)))
         fp.wait_for_timeout(200)
-    P_ = fp.evaluate("(function(){var P=OpeningLab.practice();return {n:P.results.length, intro:P.introCount}})()")
+    P_ = fp.evaluate("(function(){var P=OpeningLab.practice();return {n:P.results.length, intro:P.introCount, lines:P.linesDone}})()")
     store = fp.evaluate("JSON.parse(localStorage.getItem('openingLab.v1')).courses.e4others")
-    check('Practice: a session of 5 means 5 real questions; new moves are shown first and do not count', fp.evaluate('OpeningLab.practice().done') and P_['n'] == 5 and P_['intro'] >= 1 and len(store['learned']) >= P_['intro'], (P_, asked))
+    check('Practice: a 1-line session is one line: new moves shown first, then the same line from memory', fp.evaluate('OpeningLab.practice().done') and P_['lines'] == 1 and P_['intro'] >= 1 and P_['n'] >= P_['intro'] - 1 and len(store['learned']) >= P_['intro'], (P_, asked))
     check('Practice: after new moves the same line is replayed from memory', recall_seen, asked)
     check('Practice (Move 1): the board never plays your moves for you', not self_moved, self_moved)
     fp.click('button[data-act="pstop"] >> nth=0'); fp.wait_for_timeout(200)
-    fp.click('button[data-act="pstartfrom"][data-v="known"]'); fp.click('button[data-act="plen"][data-v="10"]'); fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
+    fp.click('button[data-act="pstartfrom"][data-v="known"]'); fp.click('button[data-act="plines"][data-v="3"]'); fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
     starts, last_line, first_at = [], None, None
     for step in range(260):
         pr = fp.evaluate("(function(){var P=OpeningLab.practice();return {done:P.done, awaiting:P.awaiting, answered:!!P.answered, line:P.line, rp:!!P.recallPass}})()")
         if pr['done']:
             break
+        if click_next_line(fp):
+            continue
         if pr['answered']:
             fp.click('button[data-act="pcontinue"]'); fp.wait_for_timeout(100); continue
         if pr['awaiting'] and fp.evaluate("OpeningLab.fen()").split(' ')[1] == 'w':
@@ -477,6 +493,7 @@ with sync_playwright() as p:
             play(fp, rec_san(fp)); fp.wait_for_timeout(150)
         fp.wait_for_timeout(200)
     check('Practice (Skip what I know): later lines start past the moves you already got right', len(starts) >= 2 and max(starts[1:]) >= 2, starts)
+    check('Practice: a 3-line session ends after exactly 3 lines', fp.evaluate('OpeningLab.practice().done') and fp.evaluate('OpeningLab.practice().linesDone') == 3, fp.evaluate('OpeningLab.practice().linesDone'))
     fp.click('button[data-act="pstart"]'); fp.wait_for_timeout(300)
     check('Practice: the next time the same position comes up, it is tested', fp.evaluate('OpeningLab.practice().intro') is False and fp.locator('#side .chip.new').count() == 0)
     fp.screenshot(path=str(SHOTS / 'first-time-practice.png'))
