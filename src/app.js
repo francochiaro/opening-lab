@@ -64,6 +64,7 @@
     moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>',
     sound: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
     coords: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 17h2M7 7v4"/></svg>',
+    manual: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>',
     home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>'
   };
   var CLS = {
@@ -150,8 +151,8 @@
 
   // ----------------------------------------------------------------- engine
   var Engine = {
-    w: null, state: 'off', busy: false, job: null, next: null, cache: {}, tmp: [], stopping: false,
-    MAIN_DEPTH: 18, BG_DEPTH: 12,
+    w: null, state: 'off', busy: false, job: null, next: null, prio: null, cache: {}, tmp: [], stopping: false,
+    MAIN_DEPTH: 18, BG_DEPTH: 12, PLAY_DEPTH: 12,
     init: function () {
       if (this.state !== 'off') return;
       var self = this;
@@ -159,7 +160,12 @@
       catch (e) { this.state = 'error'; return; }
       this.state = 'loading';
       this.w.onmessage = function (ev) { self.onLine(String(ev.data)); };
-      this.w.onerror = function () { self.state = 'error'; self.busy = false; scheduleLive(); };
+      this.w.onerror = function () {
+        self.state = 'error'; self.busy = false;
+        [self.job, self.prio].forEach(function (j) { if (j && j.cb) j.cb(null); });
+        self.job = null; self.prio = null;
+        scheduleLive();
+      };
       this.w.postMessage('uci');
     },
     onLine: function (line) {
@@ -179,6 +185,7 @@
         if (c && best && best !== '(none)') c.best = best;
         if (c) c.final = c.depth >= job.depth;
         this.busy = false; this.job = null; this.stopping = false;
+        if (job.cb) job.cb(c && c.best ? c.best : null);
         scheduleLive();
         this.pump();
       }
@@ -207,13 +214,23 @@
       if (c && c.depth >= this.MAIN_DEPTH && c.pvs.length >= 3) { return; }
       if (this.job && this.job.key === k && this.job.main) return;
       this.next = { fen: fen, key: k, turn: g.turn(), depth: this.MAIN_DEPTH, multipv: 3, main: true };
-      if (this.busy) { if (!this.stopping) { this.stopping = true; this.w.postMessage('stop'); } }
+      if (this.busy) { if (!this.stopping && !this.job.cb) { this.stopping = true; this.w.postMessage('stop'); } }
+      else this.pump();
+    },
+    play: function (fen, cb) {
+      if (this.state === 'off') this.init();
+      if (this.state === 'error') { setTimeout(function () { cb(null); }, 0); return; }
+      var k = fen4(fen), c = this.cache[k];
+      if (c && c.best && c.depth >= this.PLAY_DEPTH) { setTimeout(function () { cb(c.best); }, 0); return; }
+      this.prio = { fen: fen, key: k, turn: new Chess(fen).turn(), depth: this.PLAY_DEPTH, multipv: 1, main: false, cb: cb };
+      if (this.busy) { if (!this.stopping && !this.job.cb) { this.stopping = true; this.w.postMessage('stop'); } }
       else this.pump();
     },
     pump: function () {
       if (this.busy || this.state !== 'ready') return;
-      var job = this.next || this.background();
-      this.next = null;
+      var job;
+      if (this.prio) { job = this.prio; this.prio = null; }
+      else { job = this.next || this.background(); this.next = null; }
       if (!job) return;
       this.job = job; this.busy = true; this.tmp = [];
       this.w.postMessage('setoption name MultiPV value ' + job.multipv);
@@ -252,6 +269,22 @@
     return false;
   }
 
+  var Openings = {
+    map: null, state: 'off',
+    load: function () {
+      if (this.state !== 'off' || !window.fetch) return;
+      var self = this;
+      this.state = 'loading';
+      fetch('openings.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (m) { self.map = m; self.state = 'ready'; if (S && APP.view === 'course') render(); })
+        .catch(function () { self.state = 'error'; });
+    },
+    at: function (fen) {
+      var o = this.map && this.map[fen4(fen)];
+      return o ? { eco: o[0], name: o[1] } : null;
+    }
+  };
+
   // ----------------------------------------------------------- app state
   var APP = { view: 'home', cid: null, tab: 'learn', open: {} };
   var S = null;
@@ -259,7 +292,7 @@
   var liveTimer = null;
 
   function newSession(cid) {
-    return { cid: cid, moves: [], view: 0, mode: 'book', forced: null, forcedNoted: false, lastLine: null, token: 0, timer: null, paused: false, thinking: false, feedback: null, completed: null, sel: null, userArrows: [], marks: [], showHint: false, showPlan: false, userFlip: false, anim: null, kbd: null, note: null };
+    return { cid: cid, moves: [], view: 0, mode: 'book', forced: null, forcedNoted: false, lastLine: null, token: 0, timer: null, paused: false, thinking: false, feedback: null, completed: null, sel: null, userArrows: [], marks: [], showHint: false, showPlan: false, userFlip: false, anim: null, kbd: null, note: null, manual: false, deviation: null };
   }
   function course() { return courseById(S.cid); }
   function graph() { return GRAPHS[S.cid]; }
@@ -271,6 +304,36 @@
   function turnAt(i) { return posFen(i).split(' ')[1]; }
   function learnerTurnAt(i) { return turnAt(i) === course().side; }
   function lastBookIndex() { for (var i = S.moves.length; i >= 0; i--) if (keyAt(i)) return i; return 0; }
+  function oppName() { return course().side === 'w' ? 'Black' : 'White'; }
+  function offBookMode() { return Engine.state === 'error' ? 'free' : 'engine'; }
+  function openingAt(upto) {
+    for (var i = upto; i > 0; i--) {
+      var o = Openings.at(posFen(i));
+      if (o) { o.exact = i === upto; return o; }
+    }
+    return null;
+  }
+  function otherCourseAt(fen) {
+    for (var i = 0; i < COURSES.length; i++) {
+      var c2 = COURSES[i];
+      if (c2.id !== S.cid && c2.side === course().side && GRAPHS[c2.id].nodes[OL_GRAPH.posKey(c2.id, fen)]) return c2;
+    }
+    return null;
+  }
+  function linesThrough(key) {
+    var len = S.moves.length;
+    var cands = graph().lines.filter(function (l) { return l.path.indexOf(key) >= 0; });
+    var exact = cands.filter(function (l) {
+      for (var t = 0; t <= len; t++) if (l.path[t] !== keyAt(t)) return false;
+      return true;
+    });
+    return (exact.length ? exact : cands).slice().sort(function (a, b) { return TIER_RANK[a.def.tier] - TIER_RANK[b.def.tier] || a.index - b.index; });
+  }
+  function manualTarget() {
+    if (!S || S.mode === 'free' || (P.active && P.done)) return null;
+    if (!learnerTurnAt(S.view)) return new Chess(posFen(S.view)).isGameOver() ? null : { kind: 'choose', at: S.view };
+    return S.view > 0 ? { kind: 'change', at: S.view - 1 } : null;
+  }
 
   function cancelPending() {
     S.token++;
@@ -326,18 +389,24 @@
     S.view = i;
     S.completed = null;
     S.feedback = null;
-    if (S.mode !== 'free') S.mode = keyAt(i) ? 'book' : 'free';
+    S.manual = false;
+    if (S.deviation && S.deviation.ply >= i) S.deviation = null;
+    if (S.mode !== 'free') S.mode = keyAt(i) ? 'book' : offBookMode();
   }
 
   function onUserMove(from, to, promo) {
+    var armed = S.manual;
     if (!isLive()) truncateTo(S.view);
-    if (S.mode === 'done') { S.mode = curNode() && curNode().edges.length ? 'book' : 'free'; S.completed = null; }
+    S.manual = armed;
+    var oppToMove = new Chess(posFen(S.moves.length)).turn() !== course().side;
+    if (S.manual || (oppToMove && (S.mode === 'done' || S.mode === 'oob'))) return onManualMove(from, to, promo);
+    if (S.mode === 'done') { S.mode = curNode() && curNode().edges.length ? 'book' : offBookMode(); S.completed = null; }
     if (S.mode === 'oob') S.mode = 'free';
     var len = S.moves.length;
     var g = new Chess(posFen(len));
     var nodeBefore = curNode();
     var edge = findEdge(nodeBefore, from, to, promo);
-    if (S.mode === 'book' && g.turn() !== course().side) return false;
+    if ((S.mode === 'book' || S.mode === 'engine') && g.turn() !== course().side) return false;
     if (P.active && !P.done && S.mode === 'book' && P.awaiting && !P.answered) {
       if (!practiceAnswer(nodeBefore, edge, from, to, promo, g)) return false;
     }
@@ -353,11 +422,116 @@
       if (edge) S.feedback = { type: edge.rec ? 'rec' : 'alt', edge: edge, node: nodeBefore };
       else if (S.moves[S.moves.length - 1].key) S.feedback = { type: 'transpose', node: nodeBefore };
       else { S.mode = 'oob'; S.feedback = { type: 'oob', san: mv.san, node: nodeBefore, ply: len }; }
+    } else if (S.mode === 'engine' && S.moves[len].key) {
+      S.mode = 'book';
+      S.feedback = { type: 'transpose', node: nodeBefore };
     } else S.feedback = null;
     announce('You played ' + mv.san + '.');
     render();
     continueFlow();
     return true;
+  }
+
+  function toggleManual() {
+    if (S.manual) {
+      S.manual = false; S.sel = null;
+      render(); continueFlow();
+      return;
+    }
+    var t = manualTarget();
+    if (!t) return;
+    if (P.active && !P.drill && S.mode === 'book') P.drill = { at: t.at, line: P.line };
+    if (P.active) { P.answered = null; P.awaiting = false; P.lastWrong = null; }
+    truncateTo(t.at);
+    S.paused = false; S.note = null; S.sel = null;
+    S.manual = true;
+    if (APP.tab === 'tree') toast('Move any ' + oppName().toLowerCase() + ' piece on the board to choose ' + oppName() + '\'s move.');
+    announce('Choose ' + oppName() + '\'s move: move any ' + oppName().toLowerCase() + ' piece.');
+    render();
+  }
+
+  function retargetLines(key) {
+    var ls = linesThrough(key);
+    if (!ls.length) return;
+    if (S.forced) {
+      var F = gLine(S.cid, S.forced);
+      if (!F || F.path.indexOf(key) < 0) { S.forced = ls[0].def.id; S.forcedNoted = false; }
+    }
+    if (P.active && P.line) {
+      var L = gLine(S.cid, P.line);
+      if (!L || L.path.indexOf(key) < 0) {
+        var best = ls[0];
+        ls.forEach(function (l) { if (lineWeight(l) > lineWeight(best)) best = l; });
+        P.line = best.def.id;
+      }
+    }
+  }
+
+  function onManualMove(from, to, promo) {
+    var len = S.moves.length;
+    var g = new Chess(posFen(len));
+    var mv;
+    try { mv = g.move(promo ? { from: from, to: to, promotion: promo } : { from: from, to: to }); } catch (e) { mv = null; }
+    if (!mv) return false;
+    var edge = findEdge(curNode(), from, to, promo);
+    cancelPending();
+    S.manual = false; S.note = null; S.feedback = null; S.completed = null; S.paused = false;
+    if (P.active) { P.answered = null; P.awaiting = false; P.lastWrong = null; }
+    pushMove(mv, edge);
+    S.moves[len].by = 'manual';
+    var key = S.moves[len].key;
+    if (key) {
+      S.mode = 'book';
+      retargetLines(key);
+      S.deviation = { ply: len, san: mv.san, kind: 'book', key: key };
+    } else {
+      S.mode = offBookMode();
+      S.deviation = { ply: len, san: mv.san, kind: 'off' };
+    }
+    announce('You played ' + mv.san + ' for ' + oppName() + '. ' + deviationSummary());
+    if (APP.tab === 'tree') toast(moveLabel(len, mv.san) + ': ' + deviationSummary());
+    render();
+    continueFlow();
+    return true;
+  }
+
+  function deviationSummary() {
+    var d = S.deviation;
+    if (!d) return '';
+    if (d.kind === 'book') return 'In the course, the lesson continues.';
+    var o = Openings.at(S.moves[d.ply].fen);
+    return (o ? o.name + ', not covered by this course.' : 'Not a known variation.') + ' Stockfish plays ' + oppName() + ' from here.';
+  }
+
+  function startEngine() {
+    cancelPending();
+    S.mode = offBookMode(); S.completed = null; S.feedback = null; S.paused = false; S.manual = false;
+    if (P.active) { P.answered = null; P.awaiting = false; }
+    render();
+    continueFlow();
+  }
+
+  function scheduleEngineReply() {
+    if (S.timer || S.thinking) return;
+    var tok = S.token, ply = S.moves.length, sess = S, t0 = Date.now(), fen = posFen(ply);
+    S.thinking = true;
+    Engine.play(fen, function (uci) {
+      if (sess !== S || tok !== S.token || ply !== S.moves.length) return;
+      S.timer = setTimeout(function () {
+        if (sess !== S) return;
+        S.timer = null; S.thinking = false;
+        if (tok !== S.token || ply !== S.moves.length || !isLive() || S.mode !== 'engine' || S.paused || S.manual) { render(); return; }
+        var mv = null;
+        if (uci) { try { mv = new Chess(fen).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }); } catch (e) { mv = null; } }
+        if (!mv) { S.mode = 'free'; S.note = 'The engine could not reply here, so you move both sides now.'; render(); return; }
+        pushMove(mv, findEdge(curNode(), mv.from, mv.to, mv.promotion));
+        S.moves[ply].by = 'engine';
+        if (S.moves[ply].key) { S.mode = 'book'; S.note = 'Transposed back into the course: the lesson continues from here.'; }
+        announce('Stockfish played ' + mv.san + '.');
+        render();
+        continueFlow();
+      }, Math.max(0, (reducedMotion ? 150 : 450) - (Date.now() - t0)));
+    });
   }
 
   function opponentMoveNow() {
@@ -383,7 +557,7 @@
     S.timer = setTimeout(function () {
       if (sess !== S) return;
       S.timer = null;
-      if (tok !== S.token || ply !== S.moves.length || !isLive() || S.mode !== 'book' || S.paused) { S.thinking = false; render(); return; }
+      if (tok !== S.token || ply !== S.moves.length || !isLive() || S.mode !== 'book' || S.paused || S.manual) { S.thinking = false; render(); return; }
       opponentMoveNow();
     }, delay == null ? (reducedMotion ? 150 : 520) : delay);
   }
@@ -417,6 +591,11 @@
     if (!S || !isLive()) return;
     var len = S.moves.length;
     var g = new Chess(posFen(len));
+    if (S.mode === 'engine') {
+      if (!learnerTurnAt(len) && !S.manual && !S.paused && !g.isGameOver()) scheduleEngineReply();
+      render();
+      return;
+    }
     if (S.mode !== 'book') { render(); return; }
     var n = curNode();
     if (!n) { S.mode = 'oob'; render(); return; }
@@ -424,7 +603,7 @@
     var drilled = P.active && !P.done && P.line ? gLine(S.cid, P.line) : null;
     if (drilled && n.key === drilled.leafKey) { completeLine(n, g); return; }
     if (!learnerTurnAt(len)) {
-      if (!S.paused && !(P.active && P.answered)) scheduleOpponent(P.active && P.prelude ? 120 : null);
+      if (!S.paused && !S.manual && !(P.active && P.answered)) scheduleOpponent(P.active && P.prelude ? 120 : null);
     } else if (!n.edges.some(function (e) { return e.isLearner; })) {
       completeLine(n, g);
       return;
@@ -460,10 +639,11 @@
       if (S.mode === 'oob' || keyAt(S.moves.length)) S.mode = keyAt(S.moves.length) ? 'book' : 'free';
     } else {
       do { S.moves.pop(); } while (S.moves.length && !learnerTurnAt(S.moves.length));
-      S.mode = 'book';
+      S.mode = keyAt(S.moves.length) ? 'book' : offBookMode();
     }
     S.view = S.moves.length;
-    S.completed = null; S.feedback = null; S.paused = false; S.sel = null; S.note = null;
+    S.completed = null; S.feedback = null; S.paused = false; S.sel = null; S.note = null; S.manual = false;
+    if (S.deviation && S.deviation.ply >= S.moves.length) S.deviation = null;
     if (P.active && !P.done) { P.answered = null; P.awaiting = false; }
     render();
     continueFlow();
@@ -471,7 +651,7 @@
 
   function restart(opts) {
     cancelPending();
-    S.moves = []; S.view = 0; S.mode = 'book'; S.completed = null; S.feedback = null; S.paused = false; S.sel = null; S.note = null; S.forcedNoted = false; S.userArrows = []; S.marks = [];
+    S.moves = []; S.view = 0; S.mode = 'book'; S.completed = null; S.feedback = null; S.paused = false; S.sel = null; S.note = null; S.forcedNoted = false; S.userArrows = []; S.marks = []; S.manual = false; S.deviation = null;
     if (opts && opts.key) {
       var identLen = course().identity.split(' ').length;
       var keyLine = (S.forced && gLine(S.cid, S.forced)) || weighted(graph().lines, function (l) { return { core: 6, common: 3, advanced: 1 }[l.def.tier]; });
@@ -500,7 +680,7 @@
 
   function loadPath(sans, opts) {
     cancelPending();
-    S.moves = []; S.view = 0; S.mode = 'book'; S.completed = null; S.feedback = null; S.sel = null; S.note = null;
+    S.moves = []; S.view = 0; S.mode = 'book'; S.completed = null; S.feedback = null; S.sel = null; S.note = null; S.manual = false; S.deviation = null;
     var list = sans ? sans.split(' ') : [];
     for (var i = 0; i < list.length; i++) {
       var g = new Chess(posFen(S.moves.length));
@@ -509,6 +689,7 @@
     }
     S.anim = null;
     S.paused = !(opts && opts.run);
+    if (!curNode()) S.mode = offBookMode();
     var n = curNode();
     if (n && n.edges.length === 0) S.paused = true;
     if (!learnerTurnAt(S.moves.length) && S.paused && n && n.edges.length) S.note = 'Position loaded. The opponent is to move.';
@@ -519,7 +700,7 @@
 
   function exploreFreely() {
     cancelPending();
-    S.mode = 'free'; S.completed = null; S.feedback = null; S.paused = false;
+    S.mode = 'free'; S.completed = null; S.feedback = null; S.paused = false; S.manual = false;
     render();
   }
 
@@ -597,8 +778,8 @@
 
   function practiceStartLine() {
     cancelPending();
-    S.moves = []; S.view = 0; S.mode = 'book'; S.completed = null; S.feedback = null; S.paused = false; S.sel = null; S.note = null;
-    P.awaiting = false; P.answered = null; P.tries = 0; P.lineIntros = 0;
+    S.moves = []; S.view = 0; S.mode = 'book'; S.completed = null; S.feedback = null; S.paused = false; S.sel = null; S.note = null; S.manual = false; S.deviation = null;
+    P.awaiting = false; P.answered = null; P.tries = 0; P.lineIntros = 0; P.drill = null;
     var ident = course().identity.split(' ');
     var L = gLine(S.cid, P.line);
     var pre = store.settings.pstart === 'key' ? Math.min(ident.length, L.sans.length) : 0;
@@ -714,6 +895,18 @@
     continueFlow();
   }
 
+  function practiceBackToDrill() {
+    var d = P.drill;
+    if (!d) return;
+    P.drill = null;
+    P.line = d.line;
+    P.answered = null; P.awaiting = false; P.lastWrong = null;
+    truncateTo(d.at);
+    S.mode = 'book'; S.paused = false; S.deviation = null;
+    render();
+    continueFlow();
+  }
+
   function stopPractice() {
     P = { active: false, scopePick: P.scopePick };
     cancelPending();
@@ -767,6 +960,7 @@
     var g = new Chess(posFen(S.view));
     var p = g.get(sq);
     if (!p) return false;
+    if (S.manual) return isLive() && p.color === g.turn() && g.turn() !== course().side;
     if (S.mode === 'free' || S.mode === 'oob' || S.mode === 'done') return p.color === g.turn();
     if (P.active && (P.answered || P.done)) return false;
     return p.color === course().side && g.turn() === course().side && !S.thinking;
@@ -876,6 +1070,7 @@
   }
   function onBoardKey(e) {
     var k = e.key;
+    if ((k === 'm' || k === 'M') && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); act('manual'); return; }
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' ', 'Escape'].indexOf(k) < 0) return;
     e.preventDefault();
     e.stopPropagation();
@@ -996,6 +1191,13 @@
     return '<g opacity="' + (opacity || 0.82) + '"><polyline points="' + poly + '" fill="none" stroke="' + color + '" stroke-width="0.17" stroke-linejoin="round"/><polygon points="' + h + '" fill="' + color + '"/></g>';
   }
 
+  function engineBestAt(i) {
+    var ev = Engine.get(posFen(i));
+    return ev && ev.best && ev.depth >= 8 ? ev.best : null;
+  }
+  function uciToSan(fen, uci) {
+    try { return new Chess(fen).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }).san; } catch (e) { return null; }
+  }
   function recEdgeAt(n) { if (!n) return null; for (var i = 0; i < n.edges.length; i++) if (n.edges[i].rec) return n.edges[i]; return null; }
 
   function drawArrows() {
@@ -1012,9 +1214,11 @@
     }
     var recShown = rec && (S.showHint || showMyMove() || (P.active && !P.done && P.awaiting && !P.answered && P.revealed));
     if (recShown) out += arrowSvg(rec.from, rec.to, '#5fae3a', 0.9);
+    var engBest = live && S.mode === 'engine' && !S.manual && learnerTurnAt(S.moves.length) && (S.showHint || showMyMove()) ? engineBestAt(S.moves.length) : null;
+    if (engBest) out += arrowSvg(engBest.slice(0, 2), engBest.slice(2, 4), '#5fae3a', 0.9);
     if (store.settings.arrow && !engineHidden()) {
       var ev = Engine.get(posFen(S.view));
-      if (ev && ev.best && ev.depth >= 8 && !(recShown && ev.best === rec.uci)) out += arrowSvg(ev.best.slice(0, 2), ev.best.slice(2, 4), '#4f8fe0', 0.78);
+      if (ev && ev.best && ev.depth >= 8 && !(recShown && ev.best === rec.uci) && ev.best !== engBest) out += arrowSvg(ev.best.slice(0, 2), ev.best.slice(2, 4), '#4f8fe0', 0.78);
     }
     S.userArrows.forEach(function (a) { out += arrowSvg(a[0], a[1], '#ffaa00', 0.82); });
     B.svg.innerHTML = out;
@@ -1068,6 +1272,10 @@
     if (an) an.innerHTML = analysisHtml();
     var ml = $('movelist');
     if (ml) { ml.innerHTML = moveListHtml(); scrollMoveList(); }
+    var dv = $('deviation');
+    if (dv) dv.innerHTML = deviationInner();
+    var es = $('engine-status');
+    if (es) es.innerHTML = engineStatusInner();
     drawArrows();
     drawBadge();
   }
@@ -1122,8 +1330,8 @@
       var cap = '';
       ['q', 'r', 'b', 'n', 'p'].forEach(function (t) { for (var i = 0; i < Math.max(0, counts[other][t]); i++) cap += '<img alt="" src="' + PIECES[other + t.toUpperCase()] + '">'; });
       var diff = mat[color] - mat[other];
-      var name = learner ? 'You' : (S.mode === 'free' ? 'You (free exploration)' : 'Book opponent');
-      var sub = learner ? 'Playing ' + (color === 'w' ? 'White' : 'Black') + ' in the ' + c.name : (S.mode === 'free' ? 'Moving both sides' : 'Plays only moves from this course, never an engine');
+      var name = learner ? 'You' : S.manual ? 'You (choosing ' + oppName() + '\'s move)' : S.mode === 'free' ? 'You (free exploration)' : S.mode === 'engine' ? 'Stockfish (off the book)' : 'Book opponent';
+      var sub = learner ? 'Playing ' + (color === 'w' ? 'White' : 'Black') + ' in the ' + c.name : S.manual ? 'Move any ' + oppName().toLowerCase() + ' piece' : S.mode === 'free' ? 'Moving both sides' : S.mode === 'engine' ? 'Plays the engine\'s best move' : 'Plays only moves from this course, never an engine';
       return '<div class="avatar"><img alt="" src="' + PIECES[color + (learner ? 'K' : 'N')] + '"></div><div class="player-name">' + esc(name) + '<small>' + esc(sub) + '</small></div><div class="captured" aria-label="Captured pieces">' + cap + (diff > 0 ? '<span class="adv">+' + diff + '</span>' : '') + '</div>';
     }
     $('pb-top').innerHTML = bar(topColor);
@@ -1136,6 +1344,14 @@
     set('nav-prev', S.view === 0);
     set('nav-next', S.view >= S.moves.length);
     set('nav-last', S.view >= S.moves.length);
+    var mb = $('nav-manual');
+    if (mb) {
+      var t = manualTarget(), opp = oppName();
+      mb.hidden = S.mode === 'free';
+      mb.disabled = !S.manual && !t;
+      mb.setAttribute('aria-pressed', String(!!S.manual));
+      mb.querySelector('span').textContent = S.manual ? 'Cancel choosing ' + opp + '\'s move' : t && t.kind === 'change' ? 'Change ' + opp + '\'s last move' : 'Choose ' + opp + '\'s move';
+    }
   }
 
   function renderSide() {
@@ -1200,6 +1416,7 @@
     if (!isLive()) {
       return '<div class="coach"><div class="status">Viewing move ' + esc(moveLabel(S.view - 1, S.moves[S.view - 1] ? S.moves[S.view - 1].san : '')) + '</div><p>You are browsing earlier moves. Moving a piece here starts a new branch from this position.</p><div class="btn-row"><button class="btn small" data-act="nav-last">Back to the current position</button></div></div>';
     }
+    if (S.manual) return manualCardHtml();
     if (S.mode === 'free') {
       return '<div class="coach warn"><div class="status">Free exploration</div><p>You move both sides. The book opponent is switched off, so nothing here claims to be a good or bad move; use the engine panel below for evidence.</p><div class="btn-row"><button class="btn small" data-act="back-lesson">Back to the lesson</button><button class="btn small" data-act="restart">Restart</button></div></div>';
     }
@@ -1213,14 +1430,23 @@
       });
       var cross = other ? '<p>Good news: this position is covered in the <b>' + esc(other.name) + '</b> course.</p><div class="btn-row"><button class="btn small primary" data-act="goto-course" data-cid="' + other.id + '">Continue in the ' + esc(other.short) + ' course</button></div>' : '';
       return '<div class="coach warn"><h3>Legal move, but outside this opening lesson</h3>' + cross + '<p>' + esc(f.san || 'Your move') + ' is a legal move, but it is not part of this course\'s repertoire at this position. That does not automatically mean it is a mistake: the engine panel below shows an independent evaluation.</p>' +
-        '<div class="btn-row"><button class="btn small primary" data-act="undo">Undo and try a book move</button><button class="btn small" data-act="show-alts">See supported alternatives</button><button class="btn small" data-act="explore">Explore freely</button></div>' +
+        '<div class="btn-row"><button class="btn small primary" data-act="undo">Undo and try a book move</button><button class="btn small" data-act="show-alts">See supported alternatives</button><button class="btn small" data-act="engine-go">Keep playing vs Stockfish</button><button class="btn small" data-act="explore">Explore freely</button></div>' +
         (S.showAlts && alts.length ? '<div class="movechoice">' + alts.map(function (e) { return moveChip(e, n); }).join('') + '</div>' : '') + '</div>';
     }
     if (S.mode === 'done' && S.completed) {
       var L = lineById(S.completed.id);
       var plan = annFor(S.cid)['@plans'] && annFor(S.cid)['@plans'][S.completed.id];
+      var oppTurn = !learnerTurnAt(S.moves.length), over = S.completed.mate || new Chess(posFen(S.moves.length)).isGameOver();
       return '<div class="coach done"><h3>Line complete' + (S.completed.mate ? ': checkmate!' : '') + '</h3><p><b>' + esc(L ? L.name : '') + '</b>. This is the end of the curated repertoire for this line.</p>' + (plan ? kv([['Middlegame plan', plan]]) : '') +
-        '<div class="btn-row"><button class="btn small primary" data-act="replay">Replay</button><button class="btn small" data-act="newvar">Try another variation</button><button class="btn small" data-act="explore">Explore freely</button></div></div>';
+        (over ? '' : '<p>Want to keep going? ' + (oppTurn ? 'Let Stockfish answer as ' + oppName() + ', or choose ' + oppName() + '\'s move yourself.' : 'Make your next move and Stockfish answers as ' + oppName() + '.') + '</p>') +
+        '<div class="btn-row"><button class="btn small primary" data-act="replay">Replay</button>' + (oppTurn && !over ? '<button class="btn small" data-act="engine-go">Keep playing vs Stockfish</button>' : '') + '<button class="btn small" data-act="newvar">Try another variation</button><button class="btn small" data-act="explore">Explore freely</button></div></div>';
+    }
+    if (S.mode === 'engine') {
+      var lenE = S.moves.length, overE = new Chess(posFen(lenE)).isGameOver();
+      return '<div class="coach' + (overE ? ' done' : learnerTurnAt(lenE) ? ' good' : '') + '"><div class="status" id="engine-status">' + engineStatusInner() + '</div>' +
+        (overE ? '' : '<p>Off the course: Stockfish plays ' + oppName() + '\'s best moves. You can still choose ' + oppName() + '\'s move yourself at any time.</p>') + (S.note ? '<p>' + esc(S.note) + '</p>' : '') +
+        '<div class="btn-row">' + (S.paused && !learnerTurnAt(lenE) && !overE ? '<button class="btn small primary" data-act="resume">Let Stockfish move</button>' : '') +
+        '<button class="btn small" data-act="back-lesson">Back to the course</button><button class="btn small" data-act="restart">Restart</button></div></div>';
     }
     var len = S.moves.length;
     if (S.paused && !learnerTurnAt(len)) {
@@ -1233,13 +1459,77 @@
       (S.note ? '<p>' + esc(S.note) + '</p>' : '') + '</div>';
   }
 
+  function iconSm(svg) { return svg.replace('<svg', '<svg width="16" height="16" aria-hidden="true"'); }
+
+  function manualCardHtml() {
+    var opp = oppName();
+    return '<div class="coach manual"><div class="status">' + iconSm(ICON.manual) + 'Choose ' + opp + '\'s move</div>' +
+      '<p>Move any ' + opp.toLowerCase() + ' piece on the board. You will see whether it is a known variation; then the course, or Stockfish if it is off the course, continues from there.</p>' +
+      '<div class="btn-row"><button class="btn small" data-act="manual">Cancel</button></div></div>';
+  }
+
+  function engineStatusInner() {
+    if (!S || S.mode !== 'engine' || !isLive()) return '';
+    var len = S.moves.length, g = new Chess(posFen(len)), opp = oppName();
+    if (g.isCheckmate()) return '<b>Checkmate.</b> ' + (learnerTurnAt(len) ? opp + ' wins.' : 'You win.');
+    if (g.isGameOver()) return '<b>Draw.</b>';
+    if (!learnerTurnAt(len)) return S.paused ? opp + ' to move.' : '<span class="pulse"></span>Stockfish is choosing ' + opp + '\'s move...';
+    var show = !P.active && (S.showHint || showMyMove());
+    var best = show ? engineBestAt(len) : null, san = best && uciToSan(posFen(len), best);
+    return '<span class="pulse"></span>Your move' + (san ? ': Stockfish suggests ' + esc(moveLabel(len, san)) : show ? ' (Stockfish is thinking...)' : '');
+  }
+
+  function knownAsHtml() {
+    var o = openingAt(S.view), d = S.deviation;
+    if (!o) return '';
+    var dn = d && S.view > d.ply ? Openings.at(S.moves[d.ply].fen) : null;
+    if (dn && dn.name === o.name) return '';
+    return '<div class="known-as"><span class="chip eco" title="ECO code">' + esc(o.eco) + '</span><span>' + esc(o.name) + (o.exact ? '' : ' <span class="muted">(sideline)</span>') + '</span></div>';
+  }
+
+  function deviationHtml() {
+    var d = S.deviation;
+    return d && S.view > d.ply ? '<div id="deviation">' + deviationInner() + '</div>' : '';
+  }
+
+  function deviationInner() {
+    var d = S.deviation;
+    if (!d || S.view <= d.ply || !S.moves[d.ply]) return '';
+    var opp = oppName(), m = S.moves[d.ply];
+    var head = '<h3>' + iconSm(ICON.manual) + 'You chose ' + esc(moveLabel(d.ply, d.san)) + ' for ' + opp + '</h3>';
+    var o = Openings.at(m.fen);
+    var nameHtml = o ? '<p class="opening-name"><span class="chip eco">' + esc(o.eco) + '</span><b>' + esc(o.name) + '</b></p>' : '';
+    if (d.kind === 'book') {
+      var ls = linesThrough(d.key), cur = S.forced || (P.active && P.line);
+      var intro = ls.length > 1 ? 'In the course: ' + ls.length + ' lines continue from here. ' + (P.active ? 'Practice follows the highlighted one; pick another if you like.' : 'The opponent picks among them, or pick one to follow.') : 'In the course, so the lesson continues with this line.';
+      return '<div class="coach good">' + head + nameHtml + '<p>' + intro + '</p>' +
+        '<div class="movechoice">' + ls.slice(0, 6).map(function (l) {
+          return '<button class="movechip' + (l.def.id === cur ? ' rec' : '') + '" data-act="follow-line" data-id="' + l.def.id + '">' + esc(l.def.name) + ' <small>' + TIER_LABEL[l.def.tier] + '</small></button>';
+        }).join('') + '</div>' + (ls.length > 6 ? '<p class="muted">Plus ' + (ls.length - 6) + ' more in the Opening Tree.</p>' : '') + '</div>';
+    }
+    var parent = o ? null : openingAt(d.ply);
+    var hidden = engineHidden();
+    var cls = hidden ? null : classifyMove(d.ply);
+    var bad = cls === 'inaccuracy' || cls === 'mistake' || cls === 'blunder';
+    var verdict = hidden ? (store.settings.engine ? 'Stockfish\'s verdict is hidden until you answer.' : 'Turn the engine on to see Stockfish\'s verdict on this move.')
+      : !cls ? '<span class="pulse"></span>Stockfish is checking this move...'
+      : bad ? clsIcon(cls) + '<span><b>' + { inaccuracy: 'An inaccuracy', mistake: 'A mistake', blunder: 'A blunder' }[cls] + ' by ' + opp + '</b>, according to Stockfish. Look for the way to punish it.</span>'
+      : clsIcon(cls) + '<span><b>A sound move</b> (Stockfish: ' + CLS[cls].label + '). The course just does not cover it.</span>';
+    var known = o ? nameHtml + '<p>A known variation, but this course does not cover it.</p>'
+      : '<p><b>Not a known variation.</b>' + (parent ? ' It leaves the ' + esc(parent.name) + ' (' + esc(parent.eco) + ').' : '') + '</p>';
+    var other = isLive() ? otherCourseAt(posFen(S.moves.length)) : null;
+    var cross = other ? '<p>This position is covered in the <b>' + esc(other.name) + '</b> course.</p><div class="btn-row"><button class="btn small primary" data-act="goto-course" data-cid="' + other.id + '">Continue in the ' + esc(other.short) + ' course</button></div>' : '';
+    return '<div class="coach ' + (bad ? 'warn' : 'alt') + '">' + head + known + '<p class="verdict">' + verdict + '</p>' + cross + '</div>';
+  }
+
   function learnHtml() {
     var c = course();
     var ctx = lineContext();
     var live = isLive();
     var len = S.moves.length;
     var firstVisit = !Object.keys(cprog(S.cid).lines).length && !S.forced && !S.moves.some(function (m) { return m.color === c.side; });
-    var html = crumbsHtml(ctx) + lineHeadHtml(ctx) + statusHtml() + (firstVisit ? roadmapHtml(true) : '');
+    var offBook = S.view > 0 && !keyAt(S.view) && S.mode !== 'oob';
+    var html = crumbsHtml(ctx) + (offBook ? '<div class="line-head"><h2>Off the book</h2></div>' : lineHeadHtml(ctx)) + knownAsHtml() + deviationHtml() + statusHtml() + (firstVisit ? roadmapHtml(true) : '');
     var A = annFor(S.cid);
     // feedback on the learner's last move
     if (live && S.feedback && (S.feedback.type === 'rec' || S.feedback.type === 'alt' || S.feedback.type === 'transpose')) {
@@ -1368,7 +1658,7 @@
         var m = S.moves[j];
         if (!m) { html += '<span></span>'; continue; }
         var c = m.edge ? 'book' : (hide ? null : classifyMove(j));
-        html += '<button class="ml-move' + (S.view === j + 1 ? ' cur' : '') + (m.key || m.edge ? '' : ' oob') + '" data-act="goto" data-ply="' + (j + 1) + '" aria-label="' + esc(moveLabel(j, m.san)) + (c ? ', ' + CLS[c].label : '') + '">' + (c ? clsIcon(c) : '') + esc(m.san) + '</button>';
+        html += '<button class="ml-move' + (S.view === j + 1 ? ' cur' : '') + (m.key || m.edge ? '' : ' oob') + (m.by === 'manual' ? ' manual' : '') + '" data-act="goto" data-ply="' + (j + 1) + '"' + (m.by === 'manual' ? ' title="You chose this move for ' + oppName() + '"' : '') + ' aria-label="' + esc(moveLabel(j, m.san)) + (c ? ', ' + CLS[c].label : '') + (m.by === 'manual' ? ', chosen by you' : '') + '">' + (c ? clsIcon(c) : '') + esc(m.san) + '</button>';
       }
       html += '</div>';
     }
@@ -1509,7 +1799,17 @@
       '<div class="score-row"><div class="box"><b>' + Math.min(P.len, P.linesDone + 1) + '/' + P.len + '</b><span>Line</span></div><div class="box"><b>' + res.length + '</b><span>Questions</span></div><div class="box"><b>' + (res.length ? Math.round(100 * credit2 / res.length) + '%' : '--') + '</b><span>Score</span></div><div class="box"><b>' + (res.length ? Math.round(100 * f2 / res.length) + '%' : '--') + '</b><span>First try</span></div><div class="box"><b>' + P.streak + '</b><span>Streak</span></div></div>' + dotsHtml();
     var len = S.moves.length;
     var n = curNode();
-    if (P.answered) {
+    var nextLabel = !practiceLineFinished() ? 'Play it from memory' : P.linesDone + 1 >= P.len ? 'See your results' : 'Next line';
+    var keepBtn = '<button class="btn" data-act="pengine">Keep playing vs Stockfish (not scored)</button>';
+    html += knownAsHtml() + deviationHtml();
+    if (S.manual) {
+      html += manualCardHtml();
+    } else if (S.mode === 'engine' || S.mode === 'free') {
+      html += '<div class="coach warn"><h3>What-if mode: not scored</h3><div class="status" id="engine-status">' + engineStatusInner() + '</div>' +
+        '<p>You are off the course, so ' + (S.mode === 'engine' ? 'Stockfish plays ' + oppName() + ' and ' : '') + 'nothing here counts toward your score.</p>' + (S.note ? '<p>' + esc(S.note) + '</p>' : '') +
+        '<div class="btn-row">' + (P.drill ? '<button class="btn primary" data-act="pdrill">Back to the drill</button>' : '') +
+        '<button class="btn' + (P.drill ? '' : ' primary') + '" data-act="pnextline">' + nextLabel + '</button></div></div>';
+    } else if (P.answered) {
       var e = P.answered.edge, a = e.ann || {};
       var opp = S.moves.length >= 2 ? S.moves[S.moves.length - 2].edge : null;
       var oa = opp && !opp.isLearner && opp.ann ? opp.ann : {};
@@ -1519,10 +1819,10 @@
         (e.rec ? '' : '<p>The course recommends ' + esc(moveLabel(plyOf(node), recEdgeAt(node).san)) + ' here.</p>') +
         kv([['Why this works', a.idea || (recEdgeAt(node).ann || {}).idea], ['What ' + (c.side === 'w' ? 'Black' : 'White') + ' threatens', oa.threat], ['Typical mistake', a.mistake || a.watch || oa.avoid]]) +
         (S.mode === 'done' && S.completed ? '<p><b>' + esc(lineEndText()) + '</b></p>' : '') +
-        '<div class="btn-row"><button class="btn primary" data-act="pcontinue" autofocus>' + (S.mode !== 'done' ? 'Continue' : !practiceLineFinished() ? 'Play it from memory' : P.linesDone + 1 >= P.len ? 'See your results' : 'Next line') + '</button></div></div>';
+        '<div class="btn-row"><button class="btn primary" data-act="pcontinue" autofocus>' + (S.mode !== 'done' ? 'Continue' : nextLabel) + '</button>' + (S.mode === 'done' ? keepBtn : '') + '</div></div>';
     } else if (S.mode === 'done') {
       html += '<div class="coach done"><h3>Line complete: ' + esc((lineById(S.completed && S.completed.id) || {}).name || '') + '</h3><p>' + esc(lineEndText()) + '</p>' +
-        '<div class="btn-row"><button class="btn primary" data-act="pnextline" autofocus>' + (!practiceLineFinished() ? 'Play it from memory' : P.linesDone + 1 >= P.len ? 'See your results' : 'Next line') + '</button></div></div>';
+        '<div class="btn-row"><button class="btn primary" data-act="pnextline" autofocus>' + nextLabel + '</button>' + keepBtn + '</div></div>';
     } else if (P.awaiting && n && learnerTurnAt(len)) {
       var rec = recEdgeAt(n);
       var last = S.moves[len - 1];
@@ -1863,13 +2163,15 @@
       '<button class="btn" id="nav-first" data-act="nav-first" aria-label="First move">' + ICON.first + '</button>' +
       '<button class="btn" id="nav-prev" data-act="nav-prev" aria-label="Previous move" title="Previous (Left arrow)">' + ICON.prev + '</button>' +
       '<button class="btn" id="nav-next" data-act="nav-next" aria-label="Next move" title="Next (Right arrow)">' + ICON.next + '</button>' +
-      '<button class="btn" id="nav-last" data-act="nav-last" aria-label="Last move">' + ICON.last + '</button></div></div>' +
+      '<button class="btn" id="nav-last" data-act="nav-last" aria-label="Last move">' + ICON.last + '</button></div>' +
+      '<button class="btn manual-btn" id="nav-manual" data-act="manual" aria-pressed="false" title="Make the opponent\'s move yourself (M)">' + ICON.manual + '<span></span></button></div>' +
       '</section>' +
       '<aside class="sidebar" aria-label="Training panel"><div class="side-tabs" role="tablist">' +
       [['learn', 'Learn & Explore', ICON.learn], ['tree', 'Opening Tree', ICON.tree], ['practice', 'Practice', ICON.practice]].map(function (t) {
         return '<button class="side-tab" role="tab" data-act="tab" data-tab="' + t[0] + '" aria-selected="' + (APP.tab === t[0]) + '">' + t[2] + t[1] + '</button>';
       }).join('') + '</div><div class="side-body" id="side"></div></aside></main>';
     initBoard();
+    Openings.load();
     render();
     continueFlow();
     setHash();
@@ -1970,11 +2272,22 @@
       case 'toggle-arrow': store.settings.arrow = !store.settings.arrow; save(); render(); break;
       case 'selftest': showSelftest(); break;
       case 'flip': S.userFlip = !S.userFlip; render(); break;
-      case 'nav-first': S.view = 0; S.sel = null; render(); break;
-      case 'nav-prev': if (S.view > 0) { S.view--; S.sel = null; render(); } break;
-      case 'nav-next': if (S.view < S.moves.length) { S.view++; S.anim = { ply: S.view, from: S.moves[S.view - 1].from, to: S.moves[S.view - 1].to, flags: S.moves[S.view - 1].flags, color: S.moves[S.view - 1].color }; S.sel = null; render(); if (isLive()) continueFlow(); } break;
-      case 'nav-last': S.view = S.moves.length; S.sel = null; render(); continueFlow(); break;
-      case 'goto': S.view = +el.getAttribute('data-ply'); S.sel = null; render(); if (isLive()) continueFlow(); break;
+      case 'nav-first': S.view = 0; S.sel = null; S.manual = false; render(); break;
+      case 'nav-prev': if (S.view > 0) { S.view--; S.sel = null; S.manual = false; render(); } break;
+      case 'nav-next': if (S.view < S.moves.length) { S.manual = false; S.view++; S.anim = { ply: S.view, from: S.moves[S.view - 1].from, to: S.moves[S.view - 1].to, flags: S.moves[S.view - 1].flags, color: S.moves[S.view - 1].color }; S.sel = null; render(); if (isLive()) continueFlow(); } break;
+      case 'nav-last': S.view = S.moves.length; S.sel = null; S.manual = false; render(); continueFlow(); break;
+      case 'goto': S.view = +el.getAttribute('data-ply'); S.sel = null; S.manual = false; render(); if (isLive()) continueFlow(); break;
+      case 'manual': toggleManual(); break;
+      case 'engine-go': startEngine(); break;
+      case 'pengine': startEngine(); break;
+      case 'pdrill': practiceBackToDrill(); break;
+      case 'follow-line': {
+        var fid = el.getAttribute('data-id');
+        if (P.active) P.line = fid; else { S.forced = fid; S.forcedNoted = false; }
+        toast((P.active ? 'Practice follows ' : 'The opponent follows ') + lineById(fid).name + ' from here.');
+        render();
+        break;
+      }
       case 'undo': undo(); break;
       case 'restart': restart(); break;
       case 'keypos': restart({ key: true }); break;
@@ -2159,6 +2472,7 @@
       if (e.key === 'ArrowLeft') { act('nav-prev'); e.preventDefault(); }
       else if (e.key === 'ArrowRight') { act('nav-next'); e.preventDefault(); }
       else if (e.key === 'f' || e.key === 'F') act('flip');
+      else if ((e.key === 'm' || e.key === 'M') && !e.metaKey && !e.ctrlKey && !e.altKey) act('manual');
       else if (e.key === 'Escape') treeCard(null);
     });
     window.addEventListener('hashchange', function () { if (APP.ignoreHash) { APP.ignoreHash = false; return; } route(); });
@@ -2170,6 +2484,7 @@
       practice: function () { return P; },
       engine: Engine,
       fen: function () { return S ? posFen(S.view) : null; },
+      openings: Openings,
       history: function () { return S ? S.moves.map(function (m) { return m.san; }) : []; }
     };
   }

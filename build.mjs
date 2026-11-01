@@ -44,8 +44,27 @@ fs.writeFileSync(path.join(DIST, 'index.html'), html, { encoding: 'ascii' });
 for (const f of ['stockfish-19-lite-single.js', 'stockfish-19-lite-single.wasm']) fs.copyFileSync(path.join(ROOT, 'node_modules/stockfish/bin', f), path.join(DIST, 'engine', f));
 fs.copyFileSync(path.join(ROOT, 'node_modules/stockfish/Copying.txt'), path.join(DIST, 'engine', 'COPYING.txt'));
 
+const { createRequire } = await import('module');
+const { Chess } = createRequire(import.meta.url)('chess.js');
+const ascii = s => s.replace(/\u00f8/g, 'o').replace(/\u00d8/g, 'O').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[\u2013\u2014]/g, '-');
+const openings = {};
+for (const f of ['a', 'b', 'c', 'd', 'e']) {
+  const rows = r('vendor/chess-openings/' + f + '.tsv').split('\n').slice(1).filter(Boolean);
+  for (const row of rows) {
+    const [eco, name, pgn] = row.split('\t');
+    const g = new Chess();
+    for (const tok of pgn.split(/\s+/)) if (tok && !/^\d+\.$/.test(tok)) g.move(tok);
+    const key = g.fen().split(' ').slice(0, 4).join(' ');
+    const clean = ascii(name);
+    if (/[^\x20-\x7e]/.test(clean)) throw new Error('Non-ASCII opening name: ' + name);
+    if (!openings[key] || pgn.length < openings[key][2]) openings[key] = [eco, clean, pgn.length];
+  }
+}
+for (const k in openings) openings[k].length = 2;
+fs.writeFileSync(path.join(DIST, 'openings.json'), JSON.stringify(openings), { encoding: 'ascii' });
+
 const sha = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 12);
-for (const f of ['index.html', 'engine/stockfish-19-lite-single.js', 'engine/stockfish-19-lite-single.wasm']) {
+for (const f of ['index.html', 'openings.json', 'engine/stockfish-19-lite-single.js', 'engine/stockfish-19-lite-single.wasm']) {
   const p = path.join(DIST, f);
   console.log(f.padEnd(40), String(fs.statSync(p).size).padStart(9), sha(p));
 }

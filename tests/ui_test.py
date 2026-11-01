@@ -499,6 +499,84 @@ with sync_playwright() as p:
     fp.screenshot(path=str(SHOTS / 'first-time-practice.png'))
     fc.close()
 
+    print('\nManual opponent moves (Choose Black\'s move)')
+    mc = browser.new_context(viewport={'width': 1440, 'height': 900})
+    mp_ = mc.new_page()
+    mp_.on('pageerror', lambda e: errors.append(str(e)))
+    mstate = "(function(){var s=OpeningLab.state();return {mode:s.mode,manual:s.manual,dev:s.deviation&&s.deviation.kind}})()"
+
+    def wait_eval(pg, js, timeout=12000):
+        end = time.time() + timeout / 1000
+        while time.time() < end:
+            if pg.evaluate(js):
+                return True
+            pg.wait_for_timeout(100)
+        return False
+
+    mp_.goto(URL + '#/vienna/learn'); mp_.wait_for_selector('#board .sq'); mp_.wait_for_timeout(300)
+    check('Manual: button reads "Choose Black\'s move" and is disabled before White moves', mp_.inner_text('#nav-manual') == "Choose Black's move" and mp_.evaluate("document.getElementById('nav-manual').disabled"))
+    play(mp_, 'e4'); wait_hist(mp_, 2); mp_.wait_for_timeout(200)
+    check('Manual: after the book reply the button offers to change it', mp_.inner_text('#nav-manual') == "Change Black's last move", mp_.inner_text('#nav-manual'))
+    mp_.click('#nav-manual'); mp_.wait_for_timeout(200)
+    st_ = mp_.evaluate(mstate)
+    check('Manual: arming takes back the book reply and waits for a black move', hist(mp_) == ['e4'] and st_['manual'] and mp_.locator('#side .coach.manual').count() == 1, (hist(mp_), st_))
+    mp_.wait_for_timeout(900)
+    check('Manual: the book opponent does not move while armed', hist(mp_) == ['e4'], hist(mp_))
+    play(mp_, 'c5'); mp_.wait_for_timeout(300)
+    check('Manual: 1...c5 leaves the Vienna and switches to Stockfish', mp_.evaluate(mstate) == {'mode': 'engine', 'manual': False, 'dev': 'off'}, mp_.evaluate(mstate))
+    wait_eval(mp_, "!!document.querySelector('#deviation .opening-name')", 5000)
+    dv = mp_.inner_text('#deviation')
+    check('Manual: the off-book card names the opening and links the course that covers it', 'Sicilian Defense' in dv and 'B20' in dv and mp_.locator('#deviation button[data-act="goto-course"][data-cid="e4others"]').count() == 1, dv[:200])
+    check('Manual: Stockfish gives its verdict on the chosen move', wait_eval(mp_, "!!document.querySelector('#deviation .verdict .cls')"), mp_.inner_text('#deviation'))
+    play(mp_, 'Nf3')
+    check('Manual: Stockfish answers your move off the book', wait_hist(mp_, 4, 15000) and mp_.evaluate("OpeningLab.state().moves[3].by") == 'engine', hist(mp_))
+    check('Manual: the move list marks the move you chose', mp_.locator('#movelist .ml-move.manual').count() == 1)
+
+    open_course(mp_, 'vienna')
+    play(mp_, 'e4'); wait_hist(mp_, 2); play(mp_, 'Nc3'); wait_hist(mp_, 4); mp_.wait_for_timeout(200)
+    mp_.keyboard.press('m'); mp_.wait_for_timeout(200)
+    check('Manual: the M key arms it', mp_.evaluate(mstate)['manual'] and len(hist(mp_)) == 3, (mp_.evaluate(mstate), hist(mp_)))
+    alt = 'Nc6' if hist(mp_)[-1] != 'Nc6' else 'Nf6'
+    play(mp_, alt); mp_.wait_for_timeout(900)
+    check('Manual: a book alternative stays in the course and recovers its lines', mp_.evaluate(mstate) == {'mode': 'book', 'manual': False, 'dev': 'book'} and mp_.locator('#deviation button[data-act="follow-line"]').count() >= 2 and len(hist(mp_)) == 4, (mp_.evaluate(mstate), hist(mp_)))
+    play(mp_, 'Bc4'); wait_hist(mp_, 6); mp_.wait_for_timeout(200)
+    mp_.click('#nav-manual'); mp_.wait_for_timeout(150); play(mp_, 'a5')
+    check('Manual: an unnamed move is reported as not a known variation', wait_eval(mp_, "/Not a known variation/.test((document.getElementById('deviation')||{}).textContent||'')", 5000), mp_.inner_text('#side')[:300])
+    mp_.click('#side button[data-act="back-lesson"]'); mp_.wait_for_timeout(300)
+    check('Manual: "Back to the course" returns to the last book position', mp_.evaluate("OpeningLab.state().mode") == 'book' and hist(mp_)[:5] == ['e4', 'e5', 'Nc3', 'Nc6', 'Bc4'], hist(mp_))
+
+    open_course(mp_, 'vienna')
+    pick_line(mp_, 'V09')
+    ok, d = play_line_as_learner(mp_, 'V09')
+    wait_eval(mp_, "OpeningLab.state().mode === 'done'", 4000)
+    n_end = len(hist(mp_))
+    eng = mp_.locator('#side button[data-act="engine-go"]')
+    if eng.count():
+        eng.click()
+        cont = wait_hist(mp_, n_end + 1, 15000)
+    else:
+        mv = mp_.evaluate("new ChessLib.Chess(OpeningLab.fen()).moves()[0]")
+        play(mp_, mv)
+        cont = wait_hist(mp_, n_end + 2, 15000)
+    check('Manual: after a line ends, play continues against Stockfish', ok and cont and mp_.evaluate("OpeningLab.state().mode") == 'engine', (d, hist(mp_)))
+
+    open_course(mp_, 'caro')
+    mp_.keyboard.press('m'); mp_.wait_for_timeout(200); play(mp_, 'd4'); mp_.wait_for_timeout(500)
+    check('Manual: in a Black course you choose White\'s first move (1.d4 offers the Slav course)', hist(mp_) == ['d4'] and mp_.locator('#deviation button[data-cid="slav"]').count() == 1, hist(mp_))
+
+    open_course(mp_, 'vienna', 'practice')
+    mp_.click('button[data-act="pmode"][data-v="guided"]'); mp_.click('button[data-act="plines"][data-v="1"]'); mp_.click('button[data-act="pstartfrom"][data-v="start"]')
+    mp_.click('button[data-act="pstart"]'); mp_.wait_for_timeout(300)
+    play(mp_, 'e4'); wait_hist(mp_, 2); mp_.wait_for_timeout(200)
+    r0 = mp_.evaluate('OpeningLab.practice().results.length'); line0 = mp_.evaluate('OpeningLab.practice().line')
+    mp_.click('#nav-manual'); mp_.wait_for_timeout(150); play(mp_, 'h5'); mp_.wait_for_timeout(400)
+    check('Practice: a manual off-book move opens the not-scored what-if mode', mp_.evaluate("OpeningLab.state().mode") == 'engine' and 'not scored' in mp_.inner_text('#side'))
+    play(mp_, 'd4'); wait_hist(mp_, 4, 15000)
+    check('Practice: what-if moves do not count as questions', mp_.evaluate('OpeningLab.practice().results.length') == r0)
+    mp_.click('button[data-act="pdrill"]'); mp_.wait_for_timeout(1200)
+    check('Practice: "Back to the drill" restores the book line', mp_.evaluate("OpeningLab.state().mode") == 'book' and hist(mp_) == ['e4', 'e5'] and mp_.evaluate('OpeningLab.practice().line') == line0, hist(mp_))
+    mc.close()
+
     print('\nPersistence')
     open_course(pg, 'caro', 'practice')
     pg.reload()

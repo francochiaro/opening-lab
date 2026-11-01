@@ -169,7 +169,26 @@ async function engineCheck() {
   sf.terminate();
 }
 
+function openingsCheck() {
+  console.log('\nOpening names (dist/openings.json, from vendor/chess-openings)');
+  const file = path.join(ROOT, 'dist/openings.json');
+  if (!fs.existsSync(file)) { check('dist/openings.json exists (run node build.mjs)', false); return; }
+  const raw = fs.readFileSync(file, 'utf8');
+  const map = JSON.parse(raw);
+  const at = sans => { const g = new Chess(); sans.split(' ').forEach(m => g.move(m)); return map[g.fen().split(' ').slice(0, 4).join(' ')]; };
+  check('opening names are pure ASCII', !/[^\x00-\x7f]/.test(raw));
+  check('more than 3000 named positions', Object.keys(map).length > 3000, Object.keys(map).length);
+  const anderssen = at('e4 e5 Nc3 Bc5');
+  check('2...Bc5 is named Vienna Game: Anderssen Defense', anderssen && anderssen[1] === 'Vienna Game: Anderssen Defense', JSON.stringify(anderssen));
+  for (const c of OL_COURSES) {
+    const ms = c.identity.split(' ');
+    const named = ms.some((_, i) => at(ms.slice(0, i + 1).join(' ')));
+    check(c.id + ': ' + c.identity + ' has a named position on the way', named, c.identity);
+  }
+}
+
 (async () => {
+  openingsCheck();
   if (useEngine) await engineCheck();
   console.log(failures ? `\n${failures} FAILURES` : '\nALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);

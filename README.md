@@ -23,6 +23,7 @@ An interactive chess opening trainer for club players (roughly 500-1100 Elo). Yo
 
 - **Guidance for first-timers:** every course has a "Your path" card (learn the core lines, then practice, then the common ones) with a one-click "Learn next" line. In Learn & Explore the green arrow shows your move unless you switch to "Quiz me". In Practice, a position you have never seen is shown to you first and only tested the next time it comes up.
 - **Learn & Explore:** play against the book opponent with hints you reveal, plan arrows, and a note on every move (why it works, what to watch out for, the next plan, the typical mistake). If you play a legal move outside the course, the page says so, and links to another course when that course covers the position.
+- **Choose the opponent's move:** a button under the board ("Choose Black's move", or White's in the Black courses; shortcut M) lets you make the opponent's next move yourself, in Learn & Explore and in Practice. When you are to move it reads "Change Black's last move" and takes the book's reply back, so you can ask "what if they play this instead?". If your move is in the course, the lesson picks up the lines that continue from it. If not, the page shows its name when it is a known opening (ECO code and name from the lichess opening list), or says it is not a known variation, gives Stockfish's verdict (sound, inaccuracy, mistake or blunder), and links another course that covers the position. Play then continues with Stockfish playing the opponent's best moves while the green arrow shows yours. The same happens after a line ends, with "Keep playing vs Stockfish". In Practice these moves are a what-if mode: not scored, with a "Back to the drill" button.
 - **Opening Tree:** a branching tree you can click. Any move loads its exact position. Filters, depth control and zoom.
 - **Practice:** Guided, Recall and Challenge modes, in sessions of 1, 3 or 5 lines (each played to its end; new moves are shown first, then the line is replayed from memory). Weak spots come up first. You can start from move 1 or from the key position. Progress is saved in your browser.
 - **Analysis:** eval bar, top engine lines, a best-move arrow, move labels (Book, Best, Excellent, Good, Inaccuracy, Mistake, Blunder), an advantage graph and accuracy per side using the lichess formula. All of it comes from Stockfish 19 lite running in your browser. The book opponent never uses the engine.
@@ -33,7 +34,7 @@ An interactive chess opening trainer for club players (roughly 500-1100 Elo). Yo
 - `src/ann/*.js` holds the notes for each move, plus lessons and end-of-line plans.
 - `src/graph.js` turns the lines into one graph per course, keyed by position (FEN), so different move orders that reach the same position share a node. The same graph drives the opponent, the tree, the hints and the practice scoring.
 - `src/selftest.js` holds the acceptance checks. They run in the page (shown on the home page as a badge) and in Node.
-- `src/app.{html,css,js}` is the UI. `build.mjs` inlines everything into a single pure-ASCII `dist/index.html` and copies the engine into `dist/engine/`.
+- `src/app.{html,css,js}` is the UI. `build.mjs` inlines everything into a single pure-ASCII `dist/index.html`, copies the engine into `dist/engine/`, and turns the opening-name list into `dist/openings.json` (position to ECO code and name, loaded on demand).
 
 ## Develop
 
@@ -54,6 +55,7 @@ node tests/probe.cjs "e4 e5 Nc3 Nf6 f4" 20 3   # engine lines for a position, in
 - Rules: [chess.js](https://github.com/jhlywa/chess.js) 1.4.0 (BSD-2-Clause)
 - Engine: [Stockfish.js](https://github.com/nmrugg/stockfish.js) 19 lite (GPL-3.0), shipped in `dist/engine/` with its licence
 - Pieces: cburnett set (CC BY-SA 3.0)
+- Opening names: [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) (CC0), vendored in `vendor/chess-openings/` and built into `dist/openings.json`
 - This project is licensed under GPL-3.0-or-later (see `LICENSE`), because it ships the Stockfish engine.
 
 Not affiliated with any chess website.
